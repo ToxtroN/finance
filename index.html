@@ -689,9 +689,9 @@ function renderCalc(){
     <div class="card">
       <div class="card-title">Итого (план)</div>
       <div class="row3">
-        <div><div class="note" style="margin:0;">Итого доход</div><div style="font-weight:700; font-size:17px;">${fmtMoney(c.totalIncome)}</div></div>
-        <div><div class="note" style="margin:0;">Итого расход</div><div style="font-weight:700; font-size:17px;">${fmtMoney(c.totalExpense)}</div></div>
-        <div><div class="note" style="margin:0;">Остаток</div><div style="font-weight:700; font-size:17px; color:${c.remainder>=0?'var(--green)':'var(--red)'}">${fmtMoney(c.remainder)}</div></div>
+        <div><div class="note" style="margin:0;">Итого доход</div><div id="calc_total_income" style="font-weight:700; font-size:17px;">${fmtMoney(c.totalIncome)}</div></div>
+        <div><div class="note" style="margin:0;">Итого расход</div><div id="calc_total_expense" style="font-weight:700; font-size:17px;">${fmtMoney(c.totalExpense)}</div></div>
+        <div><div class="note" style="margin:0;">Остаток</div><div id="calc_remainder" style="font-weight:700; font-size:17px; color:${c.remainder>=0?'var(--green)':'var(--red)'}">${fmtMoney(c.remainder)}</div></div>
       </div>
       <button class="btn primary block" id="saveMonthBtn" style="margin-top:14px;">Сохранить месяц</button>
       <div class="note">Сохраняет план и факт в историю. Инвестициями управляйте на вкладке «Инвестиции».</div>
@@ -724,7 +724,7 @@ function saveMonthNow(){
 /* ============================================================
    ИНВЕСТИЦИИ
    ============================================================ */
-function renderInvest(){
+function computeInvestRecommendation(){
   const s = getSettings();
   const last = lastMonth();
   const c = getCurrentCalcCache();
@@ -750,6 +750,20 @@ function renderInvest(){
       return `<div style="color:var(--text-dim); font-size:13px; margin-bottom:4px;">• ${iss.name}: не хватает даже на 1 шт. (номинал ${fmtMoney(iss.nominal)})</div>`;
     }).join('');
   }
+  return {incomeBase, percent, feePercent, recommended, usable, motivation};
+}
+
+function updateInvestRecommendationDerived(){
+  const r = computeInvestRecommendation();
+  const valEl = document.getElementById('invest_recommend_val');
+  if(valEl) valEl.textContent = `${fmtMoney(r.recommended)} / мес`;
+  const motEl = document.getElementById('invest_motivation');
+  if(motEl) motEl.innerHTML = r.motivation;
+}
+
+function renderInvest(){
+  const {incomeBase, percent, feePercent, recommended, usable, motivation} = computeInvestRecommendation();
+  const issues = getBondIssues();
 
   const bondsHTML = issues.length===0
     ? '<div class="empty-note">Пока нет выпусков — добавьте первый кнопкой ниже.</div>'
@@ -781,9 +795,9 @@ function renderInvest(){
       </div>
       <div style="margin-top:12px;">
         <div class="note" style="margin:0; font-weight:700; text-transform:uppercase; font-size:10px;">Рекомендуемая сумма</div>
-        <div style="font-size:22px; font-weight:700; color:var(--accent); font-family:'Fraunces',serif;">${fmtMoney(recommended)} / мес</div>
+        <div id="invest_recommend_val" style="font-size:22px; font-weight:700; color:var(--accent); font-family:'Fraunces',serif;">${fmtMoney(recommended)} / мес</div>
       </div>
-      <div style="margin-top:12px;">${motivation}</div>
+      <div id="invest_motivation" style="margin-top:12px;">${motivation}</div>
     </div>
 
     <div style="font-size:15px; font-weight:700; margin:4px 4px 10px; display:flex; justify-content:space-between; align-items:center;">
@@ -821,6 +835,24 @@ function getCurrentCalcCache(){
   try { return calcTotals(); } catch(e){ return null; }
 }
 
+function updateBondCardDerived(id){
+  const iss = getBondIssues().find(b=>b.id===id);
+  if(!iss) return;
+  const card = document.querySelector(`[data-bond-card="${id}"]`);
+  if(!card) return;
+  const freqLabel = FREQ_N_TO_LABEL[iss.paymentsPerYear||12] || 'Ежемесячно';
+  const monthly = bondMonthlyIncome(iss);
+  const perPayment = bondPaymentAmount(iss);
+  const noteEl = card.querySelector('[data-derived-note]');
+  if(noteEl) noteEl.innerHTML = `Купон в месяц (на руки, в среднем): <b style="color:var(--text)">${fmtMoney(monthly)}</b> · за одну выплату (${freqLabel}): <b style="color:var(--text)">${fmtMoney(perPayment)}</b>`;
+  const tiles = card.querySelectorAll('[data-derived-horizon]');
+  tiles.forEach(tile=>{
+    const mn = parseInt(tile.dataset.derivedHorizon);
+    const valEl = tile.querySelector('.val');
+    if(valEl) valEl.textContent = fmtMoney(monthly*mn);
+  });
+}
+
 function bondCardHTML(iss){
   const freqLabel = FREQ_N_TO_LABEL[iss.paymentsPerYear||12] || 'Ежемесячно';
   const monthly = bondMonthlyIncome(iss);
@@ -856,9 +888,9 @@ function bondCardHTML(iss){
         ${Object.entries(FREQ_LABEL_TO_N).map(([label,n])=>`<option value="${n}" ${(iss.paymentsPerYear||12)===n?'selected':''}>${label}</option>`).join('')}
       </select>
     </div>
-    <div class="note" style="margin:6px 0 10px;">Купон в месяц (на руки, в среднем): <b style="color:var(--text)">${fmtMoney(monthly)}</b> · за одну выплату (${freqLabel}): <b style="color:var(--text)">${fmtMoney(perPayment)}</b></div>
+    <div class="note" data-derived-note style="margin:6px 0 10px;">Купон в месяц (на руки, в среднем): <b style="color:var(--text)">${fmtMoney(monthly)}</b> · за одну выплату (${freqLabel}): <b style="color:var(--text)">${fmtMoney(perPayment)}</b></div>
     <div class="btn-row" style="margin-bottom:6px;">
-      ${[6,12,24,36].map(mn=>`<div class="tile" style="flex:1; min-width:70px;"><div class="lbl">${mn} мес</div><div class="val" style="font-size:13px; color:var(--green)">${fmtMoney(monthly*mn)}</div></div>`).join('')}
+      ${[6,12,24,36].map(mn=>`<div class="tile" data-derived-horizon="${mn}" style="flex:1; min-width:70px;"><div class="lbl">${mn} мес</div><div class="val" style="font-size:13px; color:var(--green)">${fmtMoney(monthly*mn)}</div></div>`).join('')}
     </div>
     <div class="btn-row" style="margin-top:8px;">
       <button class="btn danger small" data-del-bond="${iss.id}">🗑 Удалить</button>
@@ -1422,8 +1454,8 @@ function attachHandlers(){
   // Инвестиции
   const invPercent = document.getElementById('inv_percent');
   if(invPercent){
-    invPercent.addEventListener('input', ()=>{ setSettings({investPercent: fnum(invPercent.value)}); render(); });
-    document.getElementById('inv_fee').addEventListener('input', e=>{ setSettings({brokerFeePercent: fnum(e.target.value)}); render(); });
+    invPercent.addEventListener('input', ()=>{ setSettings({investPercent: fnum(invPercent.value)}); updateInvestRecommendationDerived(); });
+    document.getElementById('inv_fee').addEventListener('input', e=>{ setSettings({brokerFeePercent: fnum(e.target.value)}); updateInvestRecommendationDerived(); });
   }
   const addBondBtn = document.getElementById('addBondBtn');
   if(addBondBtn) addBondBtn.addEventListener('click', ()=>{
@@ -1431,11 +1463,20 @@ function attachHandlers(){
       paymentDay:1, paymentsPerYear:12, couponMode:'amount', couponAmount:0, assetType:'Облигация'});
     render();
   });
-  document.querySelectorAll('[data-bond-field]').forEach(inp=>{
+  document.querySelectorAll('input[data-bond-field]').forEach(inp=>{
     inp.addEventListener('input', ()=>{
       const [id,field] = inp.dataset.bondField.split(':');
       let val = inp.value;
       if(['nominal','count','couponRate','taxRate','paymentDay','paymentsPerYear','couponAmount'].includes(field)) val = fnum(val);
+      updateBondIssue(parseFloat(id), {[field]:val});
+      updateBondCardDerived(parseFloat(id));
+    });
+  });
+  document.querySelectorAll('select[data-bond-field]').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      const [id,field] = sel.dataset.bondField.split(':');
+      let val = sel.value;
+      if(field==='paymentsPerYear') val = fnum(val);
       updateBondIssue(parseFloat(id), {[field]:val});
       render();
     });
@@ -1535,9 +1576,13 @@ function attachHandlers(){
 }
 
 function refreshTotalsOnly(){
-  // лёгкий перерасчёт итогов без полной перерисовки (чтобы не терять фокус ввода)
   const c = calcTotals();
-  // просто ререндерим — потеря фокуса допустима для простоты и надёжности данных
+  const iEl = document.getElementById('calc_total_income');
+  const eEl = document.getElementById('calc_total_expense');
+  const rEl = document.getElementById('calc_remainder');
+  if(iEl) iEl.textContent = fmtMoney(c.totalIncome);
+  if(eEl) eEl.textContent = fmtMoney(c.totalExpense);
+  if(rEl){ rEl.textContent = fmtMoney(c.remainder); rEl.style.color = c.remainder>=0?'var(--green)':'var(--red)'; }
 }
 
 /* ============================================================
