@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Финансовый трекер + Инвестор</title>
+<meta name="theme-color" content="#f2ead9">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f2ead9; --card:#fffdf7; --tile:#e9dfc7; --border:#ddd0af;
+    --accent:#2f6fed; --green:#1a9d5c; --red:#d9483d; --orange:#e08a1e;
+    --text:#3a2e1f; --text-dim:#8a7960;
+    --radius:18px; --shadow:0 2px 10px rgba(58,46,31,0.07), 0 1px 2px rgba(58,46,31,0.05);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text); font-family:'Karla',system-ui,sans-serif;
+    min-height:100vh; padding-bottom:calc(74px + env(safe-area-inset-bottom));
+  }
+  h1,h2,h3,.display{font-family:'Fraunces',serif;}
+  input,select,button{font-family:inherit;}
+  ::selection{background:var(--accent); color:#fff;}
+
+  header.top{
+    position:sticky; top:0; z-index:20; background:var(--bg);
+    padding:calc(env(safe-area-inset-top) + 14px) 16px 8px;
+    border-bottom:1px solid var(--border);
+  }
+  .brand-title{font-size:18px; font-weight:600;}
+  .brand-title em{font-style:normal; color:var(--accent);}
+
+  main{padding:14px 16px 20px; max-width:680px; margin:0 auto;}
+
+  .card{
+    background:var(--card); border-radius:var(--radius); padding:16px;
+    margin-bottom:14px; border:1px solid var(--border); box-shadow:var(--shadow);
+  }
+  .card-title{
+    font-size:12px; text-transform:uppercase; letter-spacing:1.1px; color:var(--text-dim);
+    font-weight:700; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;
+  }
+
+  nav.bottom{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    background:var(--card); border-top:1px solid var(--border);
+    display:flex; padding-bottom:env(safe-area-inset-bottom);
+  }
+  nav.bottom button{
+    flex:1; background:none; border:none; padding:10px 2px 8px; display:flex; flex-direction:column;
+    align-items:center; gap:3px; color:var(--text-dim); font-size:10px; font-family:'Karla',sans-serif;
+  }
+  nav.bottom button .ic{font-size:19px;}
+  nav.bottom button.active{color:var(--accent); font-weight:700;}
+
+  .chiprow{display:flex; gap:8px; overflow-x:auto; margin-bottom:14px; scrollbar-width:none;}
+  .chiprow::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto; padding:8px 16px; border-radius:100px; font-size:13px; font-weight:600;
+    background:var(--card); color:var(--text-dim); border:1px solid var(--border); white-space:nowrap;
+  }
+  .chip.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:5px; font-weight:600;}
+  .field input, .field select{
+    width:100%; padding:11px 12px; border-radius:12px; border:1px solid var(--border);
+    background:var(--bg); color:var(--text); font-size:15px;
+  }
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:12px 18px; border-radius:100px; border:none; font-weight:700; font-size:14px;
+    background:var(--card); color:var(--text); border:1px solid var(--border); cursor:pointer;
+  }
+  .btn.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .btn.danger{color:var(--red); border-color:var(--red);}
+  .btn.small{padding:8px 12px; font-size:12px;}
+  .btn.block{width:100%;}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap;}
+
+  .tilegrid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .tile{
+    background:var(--tile); border-radius:14px; padding:12px; border:1px solid var(--border);
+  }
+  .tile .lbl{font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-dim); font-weight:700;}
+  .tile .val{font-size:17px; font-weight:700; margin-top:4px; font-family:'Fraunces',serif;}
+  .tile .trend{font-size:10px; margin-top:3px; font-weight:700;}
+
+  .prow{margin-bottom:12px;}
+  .prow-top{display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;}
+  .prow-top b{color:var(--text);}
+  .prow-top span{color:var(--text-dim);}
+  .ptrack{height:9px; border-radius:100px; background:var(--bg); overflow:hidden; border:1px solid var(--border);}
+  .pfill{height:100%; border-radius:100px; transition:width .3s;}
+
+  .list-row{
+    display:flex; justify-content:space-between; align-items:center; padding:9px 0;
+    border-bottom:1px solid var(--border); gap:10px;
+  }
+  .list-row:last-child{border-bottom:none;}
+  .list-row .name{font-size:14px; font-weight:600;}
+  .list-row .meta{font-size:12px; color:var(--text-dim);}
+  .list-row .del{background:none; border:none; color:var(--red); font-size:16px; padding:4px 6px;}
+  .empty-note{color:var(--text-dim); font-size:13px; text-align:center; padding:16px 0;}
+  .note{font-size:11px; color:var(--text-dim); line-height:1.5; margin-top:10px;}
+
+  .goal-card{border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:10px; background:var(--bg);}
+  .goal-card .name{font-weight:700; font-size:15px;}
+  .goal-card .nums{font-size:13px; color:var(--text-dim); margin:4px 0 8px;}
+
+  .bar-h{display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px;}
+  .bar-h .lbl{width:120px; flex:0 0 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .bar-h .track{flex:1; height:14px; background:var(--bg); border-radius:8px; overflow:hidden; border:1px solid var(--border);}
+  .bar-h .fill{height:100%; border-radius:8px;}
+  .bar-h .val{width:80px; text-align:right; flex:0 0 auto; font-weight:700;}
+
+  select[multiple], textarea{width:100%;}
+
+  .answer-box{
+    background:var(--bg); border:1px solid var(--border); border-radius:14px; padding:14px;
+    font-size:14px; line-height:1.6; white-space:pre-line;
+  }
+  .qbtn{
+    display:block; width:100%; text-align:left; background:var(--bg); border:1px solid var(--border);
+    border-radius:12px; padding:10px 12px; margin-bottom:6px; font-size:13px; color:var(--text); cursor:pointer;
+  }
+  .qbtn.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+
+  .toast{
+    position:fixed; left:16px; right:16px; bottom:calc(84px + env(safe-area-inset-bottom));
+    background:var(--text); color:var(--card); padding:12px 16px; border-radius:14px; font-size:13px;
+    text-align:center; z-index:50; box-shadow:var(--shadow); opacity:0; pointer-events:none;
+    transition:opacity .25s;
+  }
+  .toast.show{opacity:1;}
+
+  @media (min-width:640px){
+    header.top > div{max-width:680px; margin:0 auto;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand-title">Финансовый <em>трекер</em></div>
+</header>
+
+<main id="app"></main>
+
+<nav class="bottom" id="bottomNav">
+  <button data-tab="home"><span class="ic">🏠</span>Главная</button>
+  <button data-tab="calc"><span class="ic">🧮</span>Просчёт</button>
+  <button data-tab="invest"><span class="ic">💹</span>Инвестиции</button>
+  <button data-tab="goals"><span class="ic">🎯</span>Цели</button>
+  <button data-tab="more"><span class="ic">⋯</span>Ещё</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   ФОРМУЛЫ И УТИЛИТЫ (портированы 1:1 из finance_tracker.py)
+   ============================================================ */
+const MONTHS_RU = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const FREQ_LABEL_TO_N = {"Ежемесячно":12, "Ежеквартально":4, "Раз в полгода":2, "Ежегодно":1};
+const FREQ_N_TO_LABEL = {12:"Ежемесячно", 4:"Ежеквартально", 2:"Раз в полгода", 1:"Ежегодно"};
+
+function fnum(s, def=0){ const v = parseFloat(String(s).replace(/\s/g,'').replace(',','.')); return isNaN(v)?def:v; }
+function fmtMoney(v){
+  v = Number(v)||0;
+  const sign = v<0 ? '-' : '';
+  const abs = Math.abs(Math.round(v));
+  return sign + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ') + ' ₽';
+}
+function paymentMonthsForFreq(freq){
+  if(freq>=12) return [1,2,3,4,5,6,7,8,9,10,11,12];
+  if(freq===4) return [3,6,9,12];
+  if(freq===2) return [6,12];
+  return [12];
+}
+function bondAnnualGrossPerUnit(iss){
+  const freq = iss.paymentsPerYear || 12;
+  if((iss.couponMode||'percent')==='amount') return (iss.couponAmount||0)*freq;
+  return iss.nominal * (iss.couponRate||0) / 100.0;
+}
+function bondMonthlyIncome(iss){
+  const annual = bondAnnualGrossPerUnit(iss);
+  return iss.count * (annual/12.0) * (1-(iss.taxRate||0)/100.0);
+}
+function bondPaymentAmount(iss){
+  const freq = iss.paymentsPerYear || 12;
+  const annual = bondAnnualGrossPerUnit(iss);
+  const perUnit = freq ? annual/freq : 0;
+  return iss.count * perUnit * (1-(iss.taxRate||0)/100.0);
+}
+function forecastMonthsToTarget(currentCapital, monthlyInvest, annualYield, taxRate, targetMonthlyIncome, maxMonths=600){
+  const r = annualYield/100.0/12.0, tax = taxRate/100.0;
+  let balance = currentCapital;
+  for(let m=1;m<=maxMonths;m++){
+    const couponNet = balance*r*(1-tax);
+    balance = balance+monthlyInvest+couponNet;
+    if(couponNet>=targetMonthlyIncome) return {months:m, balance, couponNet};
+  }
+  return {months:null, balance, couponNet:null};
+}
+function forecastMonthsToCapital(currentCapital, monthlyInvest, annualYield, taxRate, targetCapital, maxMonths=600){
+  const r = annualYield/100.0/12.0, tax = taxRate/100.0;
+  let balance = currentCapital;
+  for(let m=1;m<=maxMonths;m++){
+    const couponNet = balance*r*(1-tax);
+    balance = balance+monthlyInvest+couponNet;
+    if(balance>=targetCapital) return {months:m, balance};
+  }
+  return {months:null, balance};
+}
+function projectCapitalAfter(currentCapital, monthlyInvest, annualYield, taxRate, months){
+  const r = annualYield/100.0/12.0, tax = taxRate/100.0;
+  let balance = currentCapital;
+  for(let i=0;i<Math.max(months,0);i++){
+    const couponNet = balance*r*(1-tax);
+    balance = balance+monthlyInvest+couponNet;
+  }
+  return balance;
+}
+
+/* ============================================================
+   ХРАНИЛИЩЕ (localStorage вместо SQLite — прогресс сохраняется)
+   ============================================================ */
+const LS = 'ft_';
+function todayYM(){ const d=new Date(); return {year:d.getFullYear(), month:d.getMonth()+1}; }
+function ymKey(y,m){ return `${y}-${m}`; }
+function loadJSON(key, fallback){
+  try{ const v = localStorage.getItem(LS+key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; }
+}
+function saveJSON(key, val){ localStorage.setItem(LS+key, JSON.stringify(val)); }
+
+function defaultSettings(){
+  return {
+    incomeMain:82000, incomeCourier:40000, incomeOther:0,
+    rent:32000, kindergarten:3000, food:25000, unexpected:20000, otherExpense:0,
+    investPercent:15, brokerFeePercent:1.5, taxRate:13, passiveTarget:100000, theme:'light',
+  };
+}
+function getSettings(){ return Object.assign(defaultSettings(), loadJSON('settings', {})); }
+function setSettings(patch){ const s = Object.assign(getSettings(), patch); saveJSON('settings', s); return s; }
+
+function getCustomItems(kind){ return loadJSON('custom_'+kind, []); } // [{id,name,amount}]
+function setCustomItems(kind, arr){ saveJSON('custom_'+kind, arr); }
+function addCustomItem(kind, name, amount){
+  const arr = getCustomItems(kind);
+  arr.push({id:Date.now()+Math.random(), name, amount});
+  setCustomItems(kind, arr);
+}
+function updateCustomItem(kind, id, patch){
+  const arr = getCustomItems(kind).map(it=>it.id===id?Object.assign(it,patch):it);
+  setCustomItems(kind, arr);
+}
+function deleteCustomItem(kind, id){ setCustomItems(kind, getCustomItems(kind).filter(it=>it.id!==id)); }
+
+function getItemFacts(y,m){ return loadJSON('facts_'+ymKey(y,m), {}); } // {itemKey: amount}
+function setItemFact(y,m,itemKey,amount){
+  const f = getItemFacts(y,m); f[itemKey]=amount; saveJSON('facts_'+ymKey(y,m), f);
+}
+function getItemFact(y,m,itemKey,def=0){ const f=getItemFacts(y,m); return itemKey in f ? f[itemKey] : def; }
+function sumItemFacts(y,m,prefix){
+  const f = getItemFacts(y,m);
+  return Object.keys(f).filter(k=>k.startsWith(prefix)).reduce((s,k)=>s+(f[k]||0),0);
+}
+function categoryTotalsAllTime(kind){
+  const months = getMonths();
+  const totals = {};
+  months.forEach(mo=>{
+    const f = getItemFacts(mo.year, mo.month);
+    Object.keys(f).forEach(k=>{
+      if(k.startsWith(kind+':')){ totals[k]=(totals[k]||0)+f[k]; }
+    });
+  });
+  return Object.entries(totals).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+}
+function categoryTotalsForMonth(kind,y,m){
+  const f = getItemFacts(y,m);
+  return Object.keys(f).filter(k=>k.startsWith(kind+':') && f[k]>0).map(k=>[k,f[k]]).sort((a,b)=>b[1]-a[1]);
+}
+function categoryLabel(kind, itemKey){
+  const FIXED = {
+    expense:{rent:'Квартира', kindergarten:'Садик', food:'Еда', unexpected:'Непредвиденные', other_expense:'Прочее'},
+    income:{income_main:'Работа', income_courier:'Курьер', income_other:'Прочее'},
+  };
+  const suffix = itemKey.split(':').slice(1).join(':');
+  if(suffix.startsWith('custom:')){
+    const cid = suffix.split(':')[1];
+    const it = getCustomItems(kind).find(x=>String(x.id)===cid);
+    return it ? it.name : `Статья (удалена)`;
+  }
+  return (FIXED[kind]||{})[suffix] || suffix;
+}
+
+function getMonths(){ return loadJSON('months', []); } // [{year,month,...}]
+function saveMonth(data){
+  const arr = getMonths();
+  const idx = arr.findIndex(m=>m.year===data.year && m.month===data.month);
+  if(idx>=0) arr[idx]=Object.assign(arr[idx],data); else arr.push(data);
+  arr.sort((a,b)=> a.year-b.year || a.month-b.month);
+  saveJSON('months', arr);
+}
+function lastMonth(){ const arr=getMonths(); return arr.length?arr[arr.length-1]:null; }
+
+function getDeposits(y,m){ return loadJSON('deposits_'+ymKey(y,m), []); }
+function addDeposit(y,m,amount,note=''){
+  const arr = getDeposits(y,m);
+  arr.push({id:Date.now()+Math.random(), amount, note, createdAt:new Date().toISOString()});
+  saveJSON('deposits_'+ymKey(y,m), arr);
+}
+function deleteDeposit(y,m,id){ saveJSON('deposits_'+ymKey(y,m), getDeposits(y,m).filter(d=>d.id!==id)); }
+function depositsSum(y,m){ return getDeposits(y,m).reduce((s,d)=>s+d.amount,0); }
+function totalDepositsAllTime(){
+  let total=0;
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if(k.startsWith(LS+'deposits_')){
+      const arr = JSON.parse(localStorage.getItem(k)||'[]');
+      total += arr.reduce((s,d)=>s+d.amount,0);
+    }
+  }
+  return total;
+}
+
+function getSavingsGoals(){ return loadJSON('goals', []); }
+function setSavingsGoals(arr){ saveJSON('goals', arr); }
+function addSavingsGoal(name,target=100000,saved=0,comment='',autoTrack=false){
+  const arr = getSavingsGoals();
+  arr.push({id:Date.now()+Math.random(), name, target, saved, comment, autoTrack});
+  setSavingsGoals(arr);
+}
+function updateSavingsGoal(id,patch){ setSavingsGoals(getSavingsGoals().map(g=>g.id===id?Object.assign(g,patch):g)); }
+function deleteSavingsGoal(id){ setSavingsGoals(getSavingsGoals().filter(g=>g.id!==id)); }
+
+function getBondIssues(){ return loadJSON('bonds', []); }
+function setBondIssues(arr){ saveJSON('bonds', arr); }
+function addBondIssue(data){
+  const arr = getBondIssues();
+  arr.push(Object.assign({id:Date.now()+Math.random()}, data));
+  setBondIssues(arr);
+}
+function updateBondIssue(id,patch){ setBondIssues(getBondIssues().map(b=>b.id===id?Object.assign(b,patch):b)); }
+function deleteBondIssue(id){
+  setBondIssues(getBondIssues().filter(b=>b.id!==id));
+  const cr = getCouponReceipts();
+  Object.keys(cr).forEach(k=>{ if(k.startsWith(id+'-')) delete cr[k]; });
+  saveJSON('coupon_receipts', cr);
+}
+function totalBondCapital(){ return getBondIssues().reduce((s,i)=>s+i.count*i.nominal,0); }
+function totalMonthlyCouponIncome(){ return getBondIssues().reduce((s,i)=>s+bondMonthlyIncome(i),0); }
+function blendedCouponRateAndTax(){
+  const issues = getBondIssues();
+  const capital = issues.reduce((s,i)=>s+i.count*i.nominal,0);
+  if(capital<=0) return {rate:null, tax:null};
+  const weightedRate = issues.reduce((s,i)=> s + i.count*i.nominal*(i.nominal?bondAnnualGrossPerUnit(i)/i.nominal*100.0:0), 0) / capital;
+  const weightedTax = issues.reduce((s,i)=> s + i.count*i.nominal*(i.taxRate||0), 0) / capital;
+  return {rate:weightedRate, tax:weightedTax};
+}
+
+function getCouponReceipts(){ return loadJSON('coupon_receipts', {}); } // {"id-y-m": amount}
+function isCouponReceived(bondId,y,m){ return (bondId+'-'+y+'-'+m) in getCouponReceipts(); }
+function markCouponReceived(bondId,y,m,amount){
+  const cr = getCouponReceipts(); cr[bondId+'-'+y+'-'+m]=amount; saveJSON('coupon_receipts', cr);
+}
+function unmarkCouponReceived(bondId,y,m){
+  const cr = getCouponReceipts(); delete cr[bondId+'-'+y+'-'+m]; saveJSON('coupon_receipts', cr);
+}
+function totalCouponsReceivedAllTime(){ return Object.values(getCouponReceipts()).reduce((s,v)=>s+v,0); }
+function couponsReceivedForYear(year){
+  const cr = getCouponReceipts();
+  return Object.entries(cr).reduce((s,[k,v])=>{
+    const parts = k.split('-'); return parts[1]===String(year) ? s+v : s;
+  },0);
+}
+function totalCouponsEarned(){ return getMonths().reduce((s,m)=>s+(m.couponIncome||0),0); }
+
+function getUtilityCategories(){ return loadJSON('utility_cats', [
+  {id:1,name:'Электричество'},{id:2,name:'Вода'},{id:3,name:'Газ'},{id:4,name:'Домофон/Мусор'},{id:5,name:'Интернет'},
+]); }
+function setUtilityCategories(arr){ saveJSON('utility_cats', arr); }
+function addUtilityCategory(name){
+  const arr = getUtilityCategories();
+  const id = Date.now()+Math.random();
+  arr.push({id, name}); setUtilityCategories(arr); return id;
+}
+function renameUtilityCategory(id,name){ setUtilityCategories(getUtilityCategories().map(c=>c.id===id?{...c,name}:c)); }
+function deleteUtilityCategory(id){
+  setUtilityCategories(getUtilityCategories().filter(c=>c.id!==id));
+  const p = getUtilityPayments(); Object.keys(p).forEach(k=>{ if(k.startsWith(id+'-')) delete p[k]; });
+  saveJSON('utility_payments', p);
+}
+function getUtilityPayments(){ return loadJSON('utility_payments', {}); } // {"catId-y-m": amount}
+function setUtilityPayment(catId,y,m,amount){
+  const p = getUtilityPayments(); p[catId+'-'+y+'-'+m]=amount; saveJSON('utility_payments', p);
+}
+function getUtilityPayment(catId,y,m,def=0){ const p=getUtilityPayments(); const k=catId+'-'+y+'-'+m; return k in p?p[k]:def; }
+function utilityTotalForMonth(y,m){
+  const cats = getUtilityCategories();
+  return cats.reduce((s,c)=>s+getUtilityPayment(c.id,y,m,0),0);
+}
+function utilityTotalAllTime(){ return Object.values(getUtilityPayments()).reduce((s,v)=>s+v,0); }
+function utilityTotalsByCategoryAllTime(){
+  const cats = getUtilityCategories(); const p = getUtilityPayments();
+  return cats.map(c=>{
+    const total = Object.entries(p).filter(([k])=>k.startsWith(c.id+'-')).reduce((s,[,v])=>s+v,0);
+    return {name:c.name, total};
+  }).filter(r=>r.total>0).sort((a,b)=>b.total-a.total);
+}
+function listUtilityMonths(){
+  const p = getUtilityPayments();
+  const set = new Set();
+  Object.keys(p).forEach(k=>{ const parts=k.split('-'); set.add(parts[1]+'-'+parts[2]); });
+  return Array.from(set).map(s=>{ const [y,m]=s.split('-').map(Number); return {year:y,month:m}; })
+    .sort((a,b)=> a.year-b.year || a.month-b.month);
+}
+
+function portfolioSnapshot(){
+  const bondCapital = totalBondCapital();
+  if(bondCapital>0){
+    const {rate,tax} = blendedCouponRateAndTax();
+    return {currentCapital:bondCapital, passive:totalMonthlyCouponIncome(), couponRate:rate, taxRate:tax};
+  }
+  const last = lastMonth();
+  const s = getSettings();
+  const bondsTotal = last ? (last.bondsTotal||0) : 0;
+  const nominal = last ? (last.bondsNominal||1000) : 1000;
+  const couponRate = last ? last.couponRate : s.taxRate ? 12 : 12;
+  const taxRate = last ? last.taxRate : s.taxRate;
+  return {currentCapital:bondsTotal*nominal, passive: last?last.couponIncome:0, couponRate: last?last.couponRate:12, taxRate: last?last.taxRate:s.taxRate};
+}
+
+function fmt(n,d=0){ return Number(n||0).toFixed(d); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   НАВИГАЦИЯ
+   ============================================================ */
+let currentTab = 'home';
+let moreSubTab = 'utilities';
+let calcYear = todayYM().year, calcMonth = todayYM().month;
+let utilYear = todayYM().year, utilMonth = todayYM().month;
+let lastAnalyticsKey = null;
+
+function setTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('#bottomNav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  render();
+}
+document.querySelectorAll('#bottomNav button').forEach(b=> b.addEventListener('click', ()=>setTab(b.dataset.tab)));
+
+function render(){
+  const app = document.getElementById('app');
+  if(currentTab==='home') app.innerHTML = renderHome();
+  else if(currentTab==='calc') app.innerHTML = renderCalc();
+  else if(currentTab==='invest') app.innerHTML = renderInvest();
+  else if(currentTab==='goals') app.innerHTML = renderGoals();
+  else if(currentTab==='more') app.innerHTML = renderMore();
+  attachHandlers();
+  window.scrollTo({top:0});
+}
+
+/* ============================================================
+   ГЛАВНАЯ
+   ============================================================ */
+function renderHome(){
+  const today = todayYM();
+  const last = lastMonth();
+  const remainder = last ? last.remainder : 0;
+  const snap = portfolioSnapshot();
+  const investAmountHist = last ? last.investAmount : 0;
+
+  const factIncome = sumItemFacts(today.year, today.month, 'income:');
+  const factInvested = depositsSum(today.year, today.month);
+  const factSpent = sumItemFacts(today.year, today.month, 'expense:');
+  const planIncome = last ? last.totalIncome : 0;
+  const planExpense = last ? last.totalExpense : 0;
+
+  const planKey = `plan_${today.year}_${today.month}`;
+  const s = getSettings();
+  const planAmount = fnum(s[planKey], investAmountHist || 0);
+
+  function trend(fact, plan, higherGood){
+    if(!plan || plan<=0) return '';
+    const pct = fact/plan*100;
+    const good = higherGood ? pct>=100 : pct<=100;
+    const arrow = pct>=100?'▲':'▼';
+    return `<div class="trend" style="color:${good?'var(--green)':'var(--red)'}">${arrow} ${fmt(pct)}% от плана</div>`;
+  }
+
+  const deposited = factInvested;
+  const left = Math.max(planAmount-deposited,0);
+  const planPct = planAmount>0 ? Math.min(deposited/planAmount*100,100) : 0;
+
+  const goals = getSavingsGoals();
+  const goalsHTML = goals.length===0
+    ? '<div class="empty-note">Пока нет целей — добавьте на вкладке «Цели».</div>'
+    : goals.map(g=>{
+        const savedVal = g.autoTrack ? snap.currentCapital : g.saved;
+        const targetVal = g.target || 1;
+        const pct = Math.min(savedVal/targetVal*100,100);
+        const color = pct>=100?'var(--green)':pct>=50?'var(--accent)':'var(--orange)';
+        let forecast = g.comment || '';
+        if(g.autoTrack){
+          const leftG = Math.max(targetVal-snap.currentCapital,0);
+          if(leftG<=0) forecast = 'Цель достигнута!';
+          else if(snap.couponRate!=null){
+            const r = forecastMonthsToCapital(snap.currentCapital, investAmountHist, snap.couponRate, snap.taxRate, targetVal);
+            forecast = r.months ? `Прогноз: ~${r.months} мес. (~${fmt(r.months/12,1)} лет)` : 'Увеличьте взнос, чтобы был прогноз';
+          }
+        }
+        return `<div class="goal-card">
+          <div class="name">${g.name}</div>
+          <div class="nums">${fmtMoney(savedVal)} / ${fmtMoney(targetVal)}</div>
+          <div class="ptrack"><div class="pfill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="note" style="margin-top:6px;">${forecast}</div>
+        </div>`;
+      }).join('');
+
+  const passiveTarget = fnum(s.passiveTarget, 100000);
+  let passiveDetail;
+  if(snap.passive>=passiveTarget) passiveDetail = `Цель ${fmtMoney(passiveTarget)}/мес достигнута!`;
+  else {
+    const r = forecastMonthsToTarget(snap.currentCapital, investAmountHist, snap.couponRate||0, snap.taxRate||0, passiveTarget);
+    const srok = r.months ? `~${r.months} мес. (~${fmt(r.months/12,1)} лет)` : 'увеличьте взнос или доходность';
+    passiveDetail = `Цель: ${fmtMoney(passiveTarget)}/мес · Осталось: ${fmtMoney(Math.max(passiveTarget-snap.passive,0))}/мес · Прогноз: ${srok}`;
+  }
+
+  const deposits = getDeposits(today.year, today.month);
+
+  return `
+    <div class="card">
+      <div class="card-title">${MONTHS_RU[today.month-1]} ${today.year}</div>
+      <div class="tilegrid">
+        <div class="tile"><div class="lbl">📈 План дохода</div><div class="val">${fmtMoney(planIncome)}</div></div>
+        <div class="tile"><div class="lbl">💵 Факт дохода</div><div class="val" style="color:var(--green)">${fmtMoney(factIncome)}</div>${trend(factIncome,planIncome,true)}</div>
+        <div class="tile"><div class="lbl">📉 План расхода</div><div class="val">${fmtMoney(planExpense)}</div></div>
+        <div class="tile"><div class="lbl">🧾 Факт потратил</div><div class="val" style="color:var(--orange)">${fmtMoney(factSpent)}</div>${trend(factSpent,planExpense,false)}</div>
+      </div>
+      <div class="tilegrid" style="margin-top:10px;">
+        <div class="tile"><div class="lbl">💰 Остаток</div><div class="val" style="color:${remainder>=0?'var(--green)':'var(--red)'}">${fmtMoney(remainder)}</div></div>
+        <div class="tile"><div class="lbl">🪙 Пассив сейчас</div><div class="val" style="color:var(--accent)">${fmtMoney(snap.passive)}</div></div>
+        <div class="tile"><div class="lbl">📥 Вложил (факт)</div><div class="val" style="color:var(--green)">${fmtMoney(factInvested)}</div>${trend(factInvested,planAmount,true)}</div>
+        <div class="tile"><div class="lbl">🎯 Получено купонов</div><div class="val" style="color:var(--accent)">${fmtMoney(totalCouponsReceivedAllTime())}</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">План на инвестиции в этом месяце</div>
+      <div class="row3">
+        <div><div class="note" style="margin:0;">Хотел вложить</div><div style="font-weight:700; font-size:16px;">${fmtMoney(planAmount)}</div></div>
+        <div><div class="note" style="margin:0;">Уже внёс</div><div style="font-weight:700; font-size:16px;">${fmtMoney(deposited)}</div></div>
+        <div><div class="note" style="margin:0;">Осталось</div><div style="font-weight:700; font-size:16px; color:${left<=0?'var(--green)':'var(--text)'}">${left<=0?'Выполнено!':fmtMoney(left)}</div></div>
+      </div>
+      <div class="ptrack" style="margin-top:10px; height:12px;"><div class="pfill" style="width:${planPct}%;background:${planPct>=100?'var(--green)':'var(--accent)'}"></div></div>
+
+      <div class="row2" style="margin-top:14px;">
+        <input id="h_plan_amount" type="number" placeholder="План на месяц, ₽" value="${planAmount||''}">
+        <button class="btn" id="h_save_plan">Сохранить план</button>
+      </div>
+      <div class="row2" style="margin-top:8px;">
+        <input id="h_deposit_amount" type="number" placeholder="Добавить взнос, ₽">
+        <button class="btn primary" id="h_add_deposit">Внести</button>
+      </div>
+      ${deposits.length ? `<div style="margin-top:10px;">${deposits.map(d=>`
+        <div class="list-row"><div class="name" style="font-weight:400;">${(d.createdAt||'').slice(0,16).replace('T',' ')} — ${fmtMoney(d.amount)}</div>
+        <button class="del" data-del-deposit="${d.id}">✕</button></div>`).join('')}</div>` : ''}
+    </div>
+
+    <div class="card">
+      <div class="card-title">🪙 Пассивный доход</div>
+      <div style="font-size:20px; font-weight:700; color:var(--accent); font-family:'Fraunces',serif;">${fmtMoney(snap.passive)} / мес</div>
+      <div class="note">${passiveDetail}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Мои цели</div>
+      ${goalsHTML}
+    </div>
+  `;
+}
+
+/* ============================================================
+   ПРОСЧЁТ
+   ============================================================ */
+const FIXED_INCOME_FIELDS = [
+  ['incomeMain','income_main','Доход (основная работа)'],
+  ['incomeCourier','income_courier','Доход (курьер)'],
+  ['incomeOther','income_other','Прочий доход'],
+];
+const FIXED_EXPENSE_FIELDS = [
+  ['rent','rent','Квартира'],
+  ['kindergarten','kindergarten','Садик'],
+  ['food','food','Еда'],
+  ['unexpected','unexpected','Непредвиденные'],
+  ['otherExpense','other_expense','Прочее расход'],
+];
+
+function calcTotals(){
+  const s = getSettings();
+  const customIncome = getCustomItems('income').reduce((sum,it)=>sum+fnum(it.amount),0);
+  const customExpense = getCustomItems('expense').reduce((sum,it)=>sum+fnum(it.amount),0);
+  const totalIncome = fnum(s.incomeMain)+fnum(s.incomeCourier)+fnum(s.incomeOther)+customIncome;
+  const totalExpense = fnum(s.rent)+fnum(s.kindergarten)+fnum(s.food)+fnum(s.unexpected)+fnum(s.otherExpense)+customExpense;
+  const remainder = totalIncome-totalExpense;
+  const investAmount = totalIncome * fnum(s.investPercent,15) / 100.0;
+  return {totalIncome, totalExpense, remainder, investAmount};
+}
+
+function fieldRowHTML(settingKey, itemSuffix, label, kind){
+  const s = getSettings();
+  const itemKey = `${kind}:${itemSuffix}`;
+  const fact = getItemFact(calcYear, calcMonth, itemKey, 0);
+  const plan = fnum(s[settingKey]);
+  const success = plan>0 && fact>=plan;
+  return `<div class="list-row">
+    <div class="name" style="flex:1; ${success?'color:var(--text-dim); text-decoration:line-through;':''}">${label}${success?' ✅':''}</div>
+    <input type="number" data-plan-field="${settingKey}" value="${s[settingKey]}" style="width:78px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);" placeholder="план">
+    <input type="number" data-fact-field="${itemKey}" value="${fact||''}" style="width:78px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);" placeholder="факт">
+  </div>`;
+}
+
+function customRowHTML(kind, it){
+  const itemKey = `${kind}:custom:${it.id}`;
+  const fact = getItemFact(calcYear, calcMonth, itemKey, 0);
+  return `<div class="list-row">
+    <input type="text" data-custom-name="${kind}:${it.id}" value="${it.name}" style="flex:1; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
+    <input type="number" data-custom-amount="${kind}:${it.id}" value="${it.amount}" style="width:70px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);" placeholder="план">
+    <input type="number" data-fact-field="${itemKey}" value="${fact||''}" style="width:70px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);" placeholder="факт">
+    <button class="del" data-del-custom="${kind}:${it.id}">✕</button>
+  </div>`;
+}
+
+function renderCalc(){
+  const c = calcTotals();
+  const customIncome = getCustomItems('income');
+  const customExpense = getCustomItems('expense');
+  return `
+    <div class="card">
+      <div class="card-title">Период (закрытие месяца)</div>
+      <div class="row2">
+        <div class="field"><label>Год</label><input id="c_year" type="number" value="${calcYear}"></div>
+        <div class="field"><label>Месяц</label>
+          <select id="c_month">${MONTHS_RU.map((mn,i)=>`<option value="${i+1}" ${i+1===calcMonth?'selected':''}>${mn}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="note" style="margin-top:0;">Факт по статьям всегда считается за выбранный месяц (по умолчанию — текущий).</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Обычные доходы (план / факт)</div>
+      ${FIXED_INCOME_FIELDS.map(([sk,ik,label])=>fieldRowHTML(sk,ik,label,'income')).join('')}
+      ${customIncome.map(it=>customRowHTML('income',it)).join('')}
+      <div class="row2" style="margin-top:10px;">
+        <input id="ci_name" type="text" placeholder="Название статьи дохода">
+        <input id="ci_amount" type="number" placeholder="Сумма" value="0">
+      </div>
+      <button class="btn small" id="add_custom_income" style="margin-top:6px;">+ Добавить статью дохода</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Обычные расходы (план / факт)</div>
+      ${FIXED_EXPENSE_FIELDS.map(([sk,ik,label])=>fieldRowHTML(sk,ik,label,'expense')).join('')}
+      ${customExpense.map(it=>customRowHTML('expense',it)).join('')}
+      <div class="row2" style="margin-top:10px;">
+        <input id="ce_name" type="text" placeholder="Название статьи расхода">
+        <input id="ce_amount" type="number" placeholder="Сумма" value="0">
+      </div>
+      <button class="btn small" id="add_custom_expense" style="margin-top:6px;">+ Добавить статью расхода</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Итого (план)</div>
+      <div class="row3">
+        <div><div class="note" style="margin:0;">Итого доход</div><div style="font-weight:700; font-size:17px;">${fmtMoney(c.totalIncome)}</div></div>
+        <div><div class="note" style="margin:0;">Итого расход</div><div style="font-weight:700; font-size:17px;">${fmtMoney(c.totalExpense)}</div></div>
+        <div><div class="note" style="margin:0;">Остаток</div><div style="font-weight:700; font-size:17px; color:${c.remainder>=0?'var(--green)':'var(--red)'}">${fmtMoney(c.remainder)}</div></div>
+      </div>
+      <button class="btn primary block" id="saveMonthBtn" style="margin-top:14px;">Сохранить месяц</button>
+      <div class="note">Сохраняет план и факт в историю. Инвестициями управляйте на вкладке «Инвестиции».</div>
+    </div>
+  `;
+}
+
+function saveMonthNow(){
+  const c = calcTotals();
+  const s = getSettings();
+  const last = lastMonth();
+  const snap = portfolioSnapshot();
+  const data = {
+    year: calcYear, month: calcMonth,
+    incomeMain: fnum(s.incomeMain), incomeCourier: fnum(s.incomeCourier), incomeOther: fnum(s.incomeOther),
+    rent: fnum(s.rent), kindergarten: fnum(s.kindergarten), food: fnum(s.food),
+    unexpected: fnum(s.unexpected), otherExpense: fnum(s.otherExpense),
+    totalIncome: c.totalIncome, totalExpense: c.totalExpense, remainder: c.remainder,
+    investShare: fnum(s.investPercent), bondsNominal: last?last.bondsNominal:1000,
+    couponRate: snap.couponRate||0, taxRate: snap.taxRate||0,
+    bondsBought: 0, bondsTotal: last?last.bondsTotal:0,
+    couponIncome: snap.passive, investAmount: c.investAmount,
+    createdAt: new Date().toISOString(),
+  };
+  saveMonth(data);
+  showToast(`Месяц ${MONTHS_RU[calcMonth-1]} ${calcYear} сохранён`);
+  render();
+}
+
+/* ============================================================
+   ИНВЕСТИЦИИ
+   ============================================================ */
+function renderInvest(){
+  const s = getSettings();
+  const last = lastMonth();
+  const c = getCurrentCalcCache();
+  const incomeBase = c ? c.totalIncome : (last?last.totalIncome:0);
+  const percent = fnum(s.investPercent,15);
+  const feePercent = fnum(s.brokerFeePercent,1.5);
+  const recommended = incomeBase*percent/100.0;
+  const usable = recommended*(1-feePercent/100.0);
+  const issues = getBondIssues();
+
+  let motivation = '';
+  if(recommended<=0) motivation = '<div class="empty-note">Впишите доход и процент на вкладке «Просчёт», чтобы увидеть, сколько можно докупить.</div>';
+  else if(issues.length===0) motivation = '<div class="empty-note">Добавьте хотя бы один выпуск ниже, чтобы увидеть, сколько штук можно докупить.</div>';
+  else {
+    motivation = `<div class="note" style="margin:0 0 8px; font-weight:700; color:var(--text);">Если направить ${fmt(percent)}% от дохода (${fmtMoney(recommended)}), после комиссии брокера ${fmt(feePercent)}% останется ${fmtMoney(usable)}. На эту сумму можно докупить:</div>`;
+    motivation += issues.map(iss=>{
+      if(iss.nominal<=0) return '';
+      const units = Math.floor(usable/iss.nominal);
+      const cost = units*iss.nominal;
+      const perUnit = bondMonthlyIncome(Object.assign({},iss,{count:1}));
+      const extra = units*perUnit;
+      if(units>0) return `<div style="color:var(--green); font-weight:700; font-size:13px; margin-bottom:4px;">• ${iss.name}: ${units} шт. на ${fmtMoney(cost)} → +${fmtMoney(extra)}/мес пассивного дохода</div>`;
+      return `<div style="color:var(--text-dim); font-size:13px; margin-bottom:4px;">• ${iss.name}: не хватает даже на 1 шт. (номинал ${fmtMoney(iss.nominal)})</div>`;
+    }).join('');
+  }
+
+  const bondsHTML = issues.length===0
+    ? '<div class="empty-note">Пока нет выпусков — добавьте первый кнопкой ниже.</div>'
+    : issues.map(iss=>bondCardHTML(iss)).join('');
+
+  // структура портфеля по типу актива
+  const byType = {};
+  issues.forEach(iss=>{ const t=iss.assetType||'Облигация'; byType[t]=(byType[t]||0)+iss.count*iss.nominal; });
+  const typeEntries = Object.entries(byType).sort((a,b)=>b[1]-a[1]);
+  const totalCap = typeEntries.reduce((s,[,v])=>s+v,0)||1;
+  const palette = ['var(--accent)','var(--green)','var(--orange)','var(--red)','#a855f7','#0ea5a4'];
+  const compositionHTML = typeEntries.length===0 ? '<div class="empty-note">Добавьте бумаги, чтобы увидеть структуру портфеля.</div>' :
+    typeEntries.map(([name,val],i)=>barRow(name, val, totalCap, palette[i%palette.length])).join('');
+
+  // доходность по бумагам (купон в месяц)
+  const incomeItems = issues.map(iss=>[iss.name, bondMonthlyIncome(iss)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+  const totalIncomeAll = incomeItems.reduce((s,[,v])=>s+v,0)||1;
+  const incomeHTML = incomeItems.length===0 ? '<div class="empty-note">Пока нет дохода по бумагам.</div>' :
+    incomeItems.map(([name,val],i)=>barRow(name, val, totalIncomeAll, palette[i%palette.length], fmtMoney)).join('');
+
+  return `
+    <div class="card">
+      <div class="note" style="margin:0 0 10px;">Заведите здесь каждую купленную бумагу отдельной строкой: сколько штук, номинал, купон и периодичность. Приложение само посчитает доходность в месяц и календарь выплат.</div>
+      <div class="card-title">Сколько инвестировать в этом месяце</div>
+      <div class="row3">
+        <div><div class="note" style="margin:0;">Доход за месяц (план)</div><div style="font-weight:700;">${fmtMoney(incomeBase)}</div></div>
+        <div class="field" style="margin:0;"><label>% от дохода</label><input id="inv_percent" type="number" value="${percent}"></div>
+        <div class="field" style="margin:0;"><label>Комиссия брокера, %</label><input id="inv_fee" type="number" value="${feePercent}"></div>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="note" style="margin:0; font-weight:700; text-transform:uppercase; font-size:10px;">Рекомендуемая сумма</div>
+        <div style="font-size:22px; font-weight:700; color:var(--accent); font-family:'Fraunces',serif;">${fmtMoney(recommended)} / мес</div>
+      </div>
+      <div style="margin-top:12px;">${motivation}</div>
+    </div>
+
+    <div style="font-size:15px; font-weight:700; margin:4px 4px 10px; display:flex; justify-content:space-between; align-items:center;">
+      Мои выпуски <button class="btn small primary" id="addBondBtn">+ Добавить выпуск</button>
+    </div>
+    ${bondsHTML}
+
+    <div class="card">
+      <div class="card-title">Структура портфеля (по типу актива)</div>
+      ${compositionHTML}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Доходность по бумагам (купон в месяц)</div>
+      ${incomeHTML}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Календарь выплат за месяц</div>
+      ${paymentCalendarHTML()}
+    </div>
+  `;
+}
+
+function barRow(name, val, total, color, formatter=fmtMoney){
+  const pct = total ? val/total*100 : 0;
+  return `<div class="bar-h">
+    <div class="lbl" title="${name}">${name}</div>
+    <div class="track"><div class="fill" style="width:${pct}%;background:${color}"></div></div>
+    <div class="val">${formatter(val)}</div>
+  </div>`;
+}
+
+function getCurrentCalcCache(){
+  try { return calcTotals(); } catch(e){ return null; }
+}
+
+function bondCardHTML(iss){
+  const freqLabel = FREQ_N_TO_LABEL[iss.paymentsPerYear||12] || 'Ежемесячно';
+  const monthly = bondMonthlyIncome(iss);
+  const perPayment = bondPaymentAmount(iss);
+  const isAmount = (iss.couponMode||'percent')==='amount';
+  return `<div class="card" data-bond-card="${iss.id}">
+    <div class="row2">
+      <div class="field"><label>Название</label><input data-bond-field="${iss.id}:name" value="${iss.name}"></div>
+      <div class="field"><label>Тип актива</label>
+        <select data-bond-field="${iss.id}:assetType">
+          ${['Облигация','Акция','Фонд/ETF'].map(t=>`<option ${iss.assetType===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Номинал, ₽</label><input type="number" data-bond-field="${iss.id}:nominal" value="${iss.nominal}"></div>
+      <div class="field"><label>Кол-во, шт</label><input type="number" data-bond-field="${iss.id}:count" value="${iss.count}"></div>
+      <div class="field"><label>НДФЛ, %</label><input type="number" data-bond-field="${iss.id}:taxRate" value="${iss.taxRate}"></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Купон указан как</label>
+        <select data-bond-field="${iss.id}:couponMode">
+          <option value="percent" ${!isAmount?'selected':''}>% годовых</option>
+          <option value="amount" ${isAmount?'selected':''}>₽ за выплату</option>
+        </select>
+      </div>
+      ${!isAmount ? `<div class="field"><label>Ставка, % годовых</label><input type="number" data-bond-field="${iss.id}:couponRate" value="${iss.couponRate}"></div>`
+                  : `<div class="field"><label>₽ за выплату</label><input type="number" data-bond-field="${iss.id}:couponAmount" value="${iss.couponAmount||0}"></div>`}
+      <div class="field"><label>День выплаты (1-28)</label><input type="number" data-bond-field="${iss.id}:paymentDay" value="${iss.paymentDay}"></div>
+    </div>
+    <div class="field"><label>Периодичность выплат</label>
+      <select data-bond-field="${iss.id}:paymentsPerYear">
+        ${Object.entries(FREQ_LABEL_TO_N).map(([label,n])=>`<option value="${n}" ${(iss.paymentsPerYear||12)===n?'selected':''}>${label}</option>`).join('')}
+      </select>
+    </div>
+    <div class="note" style="margin:6px 0 10px;">Купон в месяц (на руки, в среднем): <b style="color:var(--text)">${fmtMoney(monthly)}</b> · за одну выплату (${freqLabel}): <b style="color:var(--text)">${fmtMoney(perPayment)}</b></div>
+    <div class="btn-row" style="margin-bottom:6px;">
+      ${[6,12,24,36].map(mn=>`<div class="tile" style="flex:1; min-width:70px;"><div class="lbl">${mn} мес</div><div class="val" style="font-size:13px; color:var(--green)">${fmtMoney(monthly*mn)}</div></div>`).join('')}
+    </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn danger small" data-del-bond="${iss.id}">🗑 Удалить</button>
+    </div>
+  </div>`;
+}
+
+function paymentCalendarHTML(){
+  const issues = getBondIssues();
+  if(issues.length===0) return '<div class="empty-note">Добавьте выпуски выше, чтобы увидеть календарь выплат.</div>';
+  const today = todayYM();
+  const byDay = {};
+  let totalMonth = 0;
+  issues.forEach(iss=>{
+    const freq = iss.paymentsPerYear||12;
+    if(!paymentMonthsForFreq(freq).includes(today.month)) return;
+    const amount = bondPaymentAmount(iss);
+    totalMonth += amount;
+    (byDay[iss.paymentDay] = byDay[iss.paymentDay]||[]).push([iss, amount]);
+  });
+  const days = Object.keys(byDay).map(Number).sort((a,b)=>a-b);
+  let html = '';
+  if(days.length===0){
+    html = '<div class="empty-note">В этом месяце выплат не ожидается.</div>';
+  } else {
+    days.forEach(day=>{
+      html += `<div style="font-weight:700; margin:10px 0 4px;">${day} число</div>`;
+      byDay[day].forEach(([iss,amount])=>{
+        const received = isCouponReceived(iss.id, today.year, today.month);
+        html += `<div class="list-row">
+          <div class="name" style="font-weight:400; flex:1;">${iss.name} — ${fmtMoney(amount)}</div>
+          ${received
+            ? `<span style="color:var(--green); font-weight:700; font-size:12px;">✓ Получено</span> <button class="btn small" data-unmark-coupon="${iss.id}">Отменить</button>`
+            : `<button class="btn small primary" data-mark-coupon="${iss.id}" data-coupon-amount="${amount}">Отметить получено</button>`}
+        </div>`;
+      });
+    });
+  }
+  html += `<div style="border-top:1px solid var(--border); margin:12px 0 8px;"></div>
+    <div class="list-row"><div class="name">Ожидается в этом месяце</div><div style="font-weight:700; color:var(--green);">${fmtMoney(totalMonth)}</div></div>
+    <div class="list-row"><div class="name">Получено всего (факт)</div><div style="font-weight:700; color:var(--accent);">${fmtMoney(totalCouponsReceivedAllTime())}</div></div>`;
+  return html;
+}
+
+/* ============================================================
+   ЦЕЛИ
+   ============================================================ */
+function renderGoals(){
+  const s = getSettings();
+  const snap = portfolioSnapshot();
+  const last = lastMonth();
+  const investAmount = last ? last.investAmount : 0;
+  const passiveTarget = fnum(s.passiveTarget, 100000);
+  const pct2 = passiveTarget ? Math.min(snap.passive/passiveTarget*100,100) : 0;
+
+  let passiveStatus;
+  if(snap.passive>=passiveTarget) passiveStatus = `Готово! Сейчас ${fmtMoney(snap.passive)}/мес`;
+  else {
+    const r = forecastMonthsToTarget(snap.currentCapital, investAmount, snap.couponRate||0, snap.taxRate||0, passiveTarget);
+    const srok = r.months ? `через ~${r.months} мес. (~${fmt(r.months/12,1)} лет)` : 'срок не определён';
+    passiveStatus = `Сейчас: ${fmtMoney(snap.passive)}/мес · Цель: ${fmtMoney(passiveTarget)}/мес · Прогноз: ${srok}`;
+  }
+
+  const goals = getSavingsGoals();
+  const goalsHTML = goals.length===0 ? '<div class="empty-note">Пока нет целей — добавьте первую кнопкой ниже.</div>' :
+    goals.map(g=>{
+      const targetVal = g.target || 1;
+      const savedVal = g.autoTrack ? snap.currentCapital : g.saved;
+      const pct = Math.min(savedVal/targetVal*100,100);
+      const color = pct>=100?'var(--green)':pct>=50?'var(--accent)':'var(--orange)';
+      let forecast = '';
+      if(g.autoTrack){
+        const left = Math.max(targetVal-snap.currentCapital,0);
+        if(left<=0) forecast = 'Цель достигнута!';
+        else {
+          const r = forecastMonthsToCapital(snap.currentCapital, investAmount, snap.couponRate||0, snap.taxRate||0, targetVal);
+          forecast = r.months ? `Осталось ${fmtMoney(left)} · Прогноз: ~${r.months} мес. (~${fmt(r.months/12,1)} лет)` : `Осталось ${fmtMoney(left)} · увеличьте взнос`;
+        }
+      }
+      return `<div class="card" data-goal-card="${g.id}">
+        <div class="field"><label>Название</label><input data-goal-field="${g.id}:name" value="${g.name}"></div>
+        <div class="row2">
+          <div class="field"><label>Цель, ₽</label><input type="number" data-goal-field="${g.id}:target" value="${g.target}"></div>
+          <div class="field"><label>Накоплено, ₽</label><input type="number" data-goal-field="${g.id}:saved" value="${fmt(savedVal)}" ${g.autoTrack?'disabled':''}></div>
+        </div>
+        <div class="field" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" data-goal-auto="${g.id}" ${g.autoTrack?'checked':''} style="width:auto;">
+          <label style="margin:0;">Считать из портфеля облигаций (авто)</label>
+        </div>
+        <div class="field"><label>Комментарий</label><input data-goal-field="${g.id}:comment" value="${g.comment||''}"></div>
+        <div class="ptrack"><div class="pfill" style="width:${pct}%;background:${color}"></div></div>
+        <div class="note">${fmt(pct)}% ${forecast?(' · '+forecast):''}</div>
+        <div class="btn-row" style="margin-top:10px;">
+          <button class="btn danger small" data-del-goal="${g.id}">🗑 Удалить</button>
+        </div>
+      </div>`;
+    }).join('');
+
+  return `
+    <div class="card">
+      <div class="card-title">Пассивный доход — целевой порог</div>
+      <div class="row2">
+        <input id="g_passive_target" type="number" value="${passiveTarget}" placeholder="₽/мес">
+        <button class="btn" id="g_save_passive">Сохранить порог</button>
+      </div>
+      <div class="note" style="font-weight:700; color:var(--text);">${passiveStatus}</div>
+      <div class="ptrack" style="margin-top:8px;"><div class="pfill" style="width:${pct2}%;background:var(--accent)"></div></div>
+    </div>
+
+    <div style="font-size:15px; font-weight:700; margin:4px 4px 10px; display:flex; justify-content:space-between; align-items:center;">
+      Мои цели накоплений <button class="btn small primary" id="addGoalBtn">+ Добавить цель</button>
+    </div>
+    ${goalsHTML}
+  `;
+}
+
+/* ============================================================
+   ВКЛАДКА "ЕЩЁ" (Коммунальные / Аналитика / История / Настройки)
+   ============================================================ */
+function renderMore(){
+  const chips = `<div class="chiprow">
+    <div class="chip ${moreSubTab==='utilities'?'active':''}" data-moresub="utilities">🧾 Коммунальные</div>
+    <div class="chip ${moreSubTab==='analytics'?'active':''}" data-moresub="analytics">📊 Аналитика</div>
+    <div class="chip ${moreSubTab==='history'?'active':''}" data-moresub="history">📅 История</div>
+    <div class="chip ${moreSubTab==='settings'?'active':''}" data-moresub="settings">⚙️ Настройки</div>
+  </div>`;
+  let body='';
+  if(moreSubTab==='utilities') body = renderUtilities();
+  else if(moreSubTab==='analytics') body = renderAnalytics();
+  else if(moreSubTab==='history') body = renderHistory();
+  else body = renderSettingsTab();
+  return chips+body;
+}
+
+/* ---- Коммунальные ---- */
+function renderUtilities(){
+  const cats = getUtilityCategories();
+  let total = 0;
+  const rows = cats.map(cat=>{
+    const amt = getUtilityPayment(cat.id, utilYear, utilMonth, 0);
+    total += amt;
+    return `<div class="list-row">
+      <input type="text" data-util-name="${cat.id}" value="${cat.name}" style="flex:1; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
+      <input type="number" data-util-amount="${cat.id}" value="${amt||''}" style="width:90px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);" placeholder="₽">
+      <button class="del" data-del-util="${cat.id}">✕</button>
+    </div>`;
+  }).join('');
+
+  const months = listUtilityMonths();
+  const chartHTML = months.length<2 ? '<div class="empty-note">Сохраните хотя бы 2 месяца, чтобы увидеть график.</div>' : utilityChartSVG(months, cats);
+
+  return `
+    <div class="card">
+      <div class="card-title">Период</div>
+      <div class="row2">
+        <div class="field"><label>Год</label><input id="u_year" type="number" value="${utilYear}"></div>
+        <div class="field"><label>Месяц</label>
+          <select id="u_month">${MONTHS_RU.map((mn,i)=>`<option value="${i+1}" ${i+1===utilMonth?'selected':''}>${mn}</option>`).join('')}</select>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Статьи коммунальных платежей</div>
+      ${cats.length===0 ? '<div class="empty-note">Пока нет статей.</div>' : rows}
+      <button class="btn small" id="addUtilCat" style="margin-top:10px;">+ Добавить статью</button>
+      <div style="border-top:1px solid var(--border); margin:14px 0 10px;"></div>
+      <div class="row2">
+        <button class="btn primary block" id="saveUtilBtn">Сохранить платежи за месяц</button>
+      </div>
+      <div class="note" style="font-weight:700; color:var(--text); text-align:right;">Итого за месяц: ${fmtMoney(total)}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Сравнение по месяцам</div>
+      ${chartHTML}
+    </div>
+  `;
+}
+
+function utilityChartSVG(months, cats){
+  const palette = ['var(--accent)','var(--green)','var(--orange)','var(--red)','#a855f7','#0ea5a4','#eab308'];
+  const w=600,h=200,pad=30;
+  let vmax=1;
+  const series = cats.map((cat,i)=>{
+    const vals = months.map(m=>getUtilityPayment(cat.id,m.year,m.month,0));
+    vmax = Math.max(vmax, ...vals);
+    return {name:cat.name, color:palette[i%palette.length], vals};
+  });
+  const stepX = (w-2*pad)/Math.max(months.length-1,1);
+  const yOf = v => h-pad-(v/vmax)*(h-2*pad-20);
+  let svg = `<svg class="chart" viewBox="0 0 ${w} ${h}" style="width:100%;"><line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="var(--border)"/>`;
+  let legendX = pad;
+  series.forEach(s=>{
+    const pts = s.vals.map((v,i)=>`${pad+i*stepX},${yOf(v)}`).join(' ');
+    svg += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
+    svg += `<text x="${legendX}" y="14" font-size="9" fill="${s.color}" font-weight="700">${s.name}</text>`;
+    legendX += 90;
+  });
+  svg += '</svg>';
+  return svg;
+}
+
+/* ---- Аналитика (18 вопросов, как в десктоп-версии) ---- */
+const ANALYTICS_QUESTIONS = [
+  ['top_category','На что я трачу больше всего?'],
+  ['expense_growth','Где выросли расходы?'],
+  ['expensive_months','Какие месяцы самые дорогие?'],
+  ['cheapest_month','Какой месяц был самым экономным?'],
+  ['potential_savings','Сколько можно было бы накопить?'],
+  ['plan_discipline','Насколько хорошо я держу план?'],
+  ['passive_growth','Как растёт пассивный доход?'],
+  ['invest_share','Какая доля дохода уходит на инвестиции?'],
+  ['goals_forecast','Когда я достигну своих целей?'],
+  ['biggest_expense','Самая крупная статья расхода за всё время?'],
+  ['averages','Сколько я в среднем зарабатываю и трачу?'],
+  ['utility_share','Какая доля расходов уходит на коммунальные?'],
+  ['utility_breakdown','На что уходят коммунальные платежи?'],
+  ['best_bond','Какая бумага приносит больше всего дохода?'],
+  ['tracking_streak','Сколько месяцев подряд я веду учёт?'],
+  ['budget_hits','Сколько раз я уложился в план?'],
+  ['coupons_this_year','Сколько принесли купоны в этом году?'],
+  ['year_end_forecast','Каким будет капитал к концу года?'],
+];
+
+function analyticsAnswer(key){
+  const months = getMonths();
+  const today = todayYM();
+  const snap = portfolioSnapshot();
+  const last = lastMonth();
+  const investAmount = last ? last.investAmount : 0;
+
+  switch(key){
+    case 'top_category': {
+      const rows = categoryTotalsAllTime('expense');
+      if(!rows.length) return 'Пока нет данных по факту трат — вносите факт на вкладке «Просчёт».';
+      const total = rows.reduce((s,[,v])=>s+v,0)||1;
+      const [k,v] = rows[0];
+      const label = categoryLabel('expense',k);
+      return `Больше всего денег уходит на «${label}»: ${fmtMoney(v)} — это ${fmt(v/total*100)}% всех фактических расходов за всё время.`;
+    }
+    case 'expense_growth': {
+      if(months.length<2) return 'Нужно минимум 2 сохранённых месяца, чтобы сравнить рост расходов.';
+      const lastM = months[months.length-1], prevM = months[months.length-2];
+      const lastTotals = Object.fromEntries(categoryTotalsForMonth('expense',lastM.year,lastM.month));
+      const prevTotals = Object.fromEntries(categoryTotalsForMonth('expense',prevM.year,prevM.month));
+      const keys = new Set([...Object.keys(lastTotals),...Object.keys(prevTotals)]);
+      const diffs = Array.from(keys).map(k=>[k,(lastTotals[k]||0)-(prevTotals[k]||0)]).sort((a,b)=>b[1]-a[1]);
+      const grown = diffs.filter(([,v])=>v>0).slice(0,5);
+      const header = `Сравнение ${MONTHS_RU[prevM.month-1]} ${prevM.year} → ${MONTHS_RU[lastM.month-1]} ${lastM.year}:`;
+      if(!grown.length) return header+'\nРасходы нигде заметно не выросли — хороший знак.';
+      return header+'\n'+grown.map(([k,v])=>`• ${categoryLabel('expense',k)}: +${fmtMoney(v)}`).join('\n');
+    }
+    case 'expensive_months': {
+      if(!months.length) return 'Пока нет сохранённых месяцев.';
+      const top = [...months].sort((a,b)=>b.totalExpense-a.totalExpense).slice(0,5);
+      return 'Самые дорогие месяцы (по плану расходов):\n'+top.map(m=>`• ${MONTHS_RU[m.month-1]} ${m.year}: ${fmtMoney(m.totalExpense)}`).join('\n');
+    }
+    case 'cheapest_month': {
+      if(!months.length) return 'Пока нет сохранённых месяцев.';
+      const cheapest = months.reduce((a,b)=>a.totalExpense<b.totalExpense?a:b);
+      return `Самый экономный месяц — ${MONTHS_RU[cheapest.month-1]} ${cheapest.year}: расход ${fmtMoney(cheapest.totalExpense)}.`;
+    }
+    case 'potential_savings': {
+      if(!months.length) return 'Пока нет сохранённых месяцев.';
+      const totalRemainder = months.reduce((s,m)=>s+Math.max(m.remainder,0),0);
+      const totalInvested = totalDepositsAllTime();
+      if(snap.couponRate==null) return `За всё время свободный остаток составил ${fmtMoney(totalRemainder)}, а реально внесено на инвестиции ${fmtMoney(totalInvested)}. Заведите бумаги на вкладке «Инвестиции», чтобы увидеть потенциал роста.`;
+      const rMonth = snap.couponRate/100/12, tax=(snap.taxRate||0)/100;
+      let balance=0;
+      months.forEach(m=>{ balance = balance*(1+rMonth*(1-tax)) + Math.max(m.remainder,0); });
+      return `За ${months.length} мес. учёта суммарный свободный остаток составил ${fmtMoney(totalRemainder)}.\nЕсли бы он сразу инвестировался под ${fmt(snap.couponRate,1)}% годовых, капитал мог бы быть примерно ${fmtMoney(balance)}.\nФактически внесено на инвестиции: ${fmtMoney(totalInvested)}.`;
+    }
+    case 'plan_discipline': {
+      if(!months.length) return 'Пока нет сохранённых месяцев.';
+      const pi=[],pe=[];
+      months.forEach(m=>{
+        const fi = sumItemFacts(m.year,m.month,'income:');
+        const fe = sumItemFacts(m.year,m.month,'expense:');
+        if(m.totalIncome) pi.push(fi/m.totalIncome*100);
+        if(m.totalExpense) pe.push(fe/m.totalExpense*100);
+      });
+      const avgI = pi.length?pi.reduce((a,b)=>a+b,0)/pi.length:0;
+      const avgE = pe.length?pe.reduce((a,b)=>a+b,0)/pe.length:0;
+      return `В среднем доход поступает на ${fmt(avgI)}% от плана, а расход исполняется на ${fmt(avgE)}% от плана (по ${months.length} мес.).`;
+    }
+    case 'passive_growth': {
+      if(!months.length) return `Сейчас пассивный доход ${fmtMoney(snap.passive)}/мес. Сохраните хотя бы один месяц, чтобы видеть динамику.`;
+      const first = months[0];
+      if(!first.couponIncome || first.couponIncome<=0) return `Сейчас пассивный доход ${fmtMoney(snap.passive)}/мес.`;
+      const growth = (snap.passive-first.couponIncome)/first.couponIncome*100;
+      return `Пассивный доход вырос с ${fmtMoney(first.couponIncome)}/мес до ${fmtMoney(snap.passive)}/мес (${growth>=0?'+':''}${fmt(growth)}%) с ${MONTHS_RU[first.month-1]} ${first.year}.`;
+    }
+    case 'invest_share': {
+      if(!months.length) return 'Пока нет сохранённых месяцев.';
+      const totalIncomeAll = months.reduce((s,m)=>s+m.totalIncome,0);
+      const totalInvested = totalDepositsAllTime();
+      if(totalIncomeAll<=0) return 'Пока недостаточно данных о доходах.';
+      return `За всё время доход (по плану) составил ${fmtMoney(totalIncomeAll)}, на инвестиции внесено ${fmtMoney(totalInvested)} — это ${fmt(totalInvested/totalIncomeAll*100,1)}% от дохода.`;
+    }
+    case 'goals_forecast': {
+      const goals = getSavingsGoals();
+      if(!goals.length) return 'У вас пока нет ни одной цели — добавьте на вкладке «Цели».';
+      return goals.map(g=>{
+        const savedVal = g.autoTrack ? snap.currentCapital : g.saved;
+        const target = g.target||1;
+        if(savedVal>=target) return `• ${g.name}: цель уже достигнута! (${fmtMoney(savedVal)})`;
+        if(g.autoTrack && snap.couponRate!=null){
+          const r = forecastMonthsToCapital(snap.currentCapital, investAmount, snap.couponRate, snap.taxRate, target);
+          const srok = r.months ? `~${r.months} мес. (~${fmt(r.months/12,1)} лет)` : 'срок не определён';
+          return `• ${g.name}: ${fmtMoney(savedVal)} / ${fmtMoney(target)} · ${srok}`;
+        }
+        return `• ${g.name}: ${fmtMoney(savedVal)} / ${fmtMoney(target)} (${fmt(savedVal/target*100)}%, пополняется вручную)`;
+      }).join('\n');
+    }
+    case 'biggest_expense': {
+      const rows = categoryTotalsAllTime('expense');
+      if(!rows.length) return 'Пока нет фактических расходов — вносите факт на вкладке «Просчёт».';
+      const [k,v] = rows[0];
+      return `Самая крупная статья расхода за всё время: «${categoryLabel('expense',k)}» — ${fmtMoney(v)}.`;
+    }
+    case 'averages': {
+      if(!months.length) return 'Пока нет сохранённых месяцев.';
+      const n = months.length;
+      const avgI = months.reduce((s,m)=>s+m.totalIncome,0)/n;
+      const avgE = months.reduce((s,m)=>s+m.totalExpense,0)/n;
+      const avgR = months.reduce((s,m)=>s+m.remainder,0)/n;
+      return `В среднем за месяц (по ${n} сохранённым месяцам):\nДоход: ${fmtMoney(avgI)}\nРасход: ${fmtMoney(avgE)}\nОстаток: ${fmtMoney(avgR)}`;
+    }
+    case 'utility_share': {
+      const utilTotal = utilityTotalAllTime();
+      const expenseTotal = months.reduce((s,m)=>s+m.totalExpense,0);
+      if(utilTotal<=0) return 'Пока нет данных по коммунальным платежам — заполните вкладку «Коммунальные».';
+      if(expenseTotal<=0) return `На коммунальные потрачено ${fmtMoney(utilTotal)} за всё время, но нет сохранённых месяцев для сравнения.`;
+      return `На коммунальные платежи ушло ${fmtMoney(utilTotal)} — примерно ${fmt(utilTotal/expenseTotal*100,1)}% от всех запланированных расходов.`;
+    }
+    case 'utility_breakdown': {
+      const rows = utilityTotalsByCategoryAllTime();
+      if(!rows.length) return 'Пока нет данных — заполните вкладку «Коммунальные».';
+      const total = rows.reduce((s,r)=>s+r.total,0)||1;
+      const top = rows[0];
+      return `Больше всего среди коммунальных уходит на «${top.name}»: ${fmtMoney(top.total)} (${fmt(top.total/total*100)}%).`;
+    }
+    case 'best_bond': {
+      const issues = getBondIssues();
+      if(!issues.length) return 'Пока нет ни одной бумаги — добавьте на вкладке «Инвестиции».';
+      const ranked = [...issues].sort((a,b)=>bondMonthlyIncome(b)-bondMonthlyIncome(a)).slice(0,5);
+      return 'Больше всего пассивного дохода приносят:\n'+ranked.map(iss=>`• ${iss.name}: +${fmtMoney(bondMonthlyIncome(iss))}/мес (${iss.count} шт. по ${fmtMoney(iss.nominal)})`).join('\n');
+    }
+    case 'tracking_streak': {
+      if(!months.length) return 'Пока нет ни одного сохранённого месяца.';
+      let streak=1;
+      for(let i=months.length-1;i>0;i--){
+        const y2=months[i].year,m2=months[i].month, y1=months[i-1].year,m1=months[i-1].month;
+        const prevExp = m2>1 ? [y2,m2-1] : [y2-1,12];
+        if(prevExp[0]===y1 && prevExp[1]===m1) streak++; else break;
+      }
+      return `Вы ведёте учёт ${streak} мес. подряд без пропусков (всего сохранено ${months.length} мес. за всё время).`;
+    }
+    case 'budget_hits': {
+      if(!months.length) return 'Пока нет сохранённых месяцев.';
+      let within=0, over=0;
+      months.forEach(m=>{
+        const fe = sumItemFacts(m.year,m.month,'expense:');
+        if(m.totalExpense && fe>m.totalExpense) over++; else within++;
+      });
+      return `За ${months.length} мес. план по расходам был соблюдён ${within} раз(а) и превышен ${over} раз(а).`;
+    }
+    case 'coupons_this_year': {
+      const yr = today.year;
+      const monthsThisYear = months.filter(m=>m.year===yr);
+      const totalThisYear = monthsThisYear.reduce((s,m)=>s+(m.couponIncome||0),0);
+      const totalAllTime = totalCouponsEarned();
+      const receivedThisYear = couponsReceivedForYear(yr);
+      const receivedAllTime = totalCouponsReceivedAllTime();
+      if(!monthsThisYear.length && receivedAllTime<=0) return `Пока нет сохранённых месяцев за ${yr} год и нет отметок о получении купонов.`;
+      return `Оценка (по сохранённым месяцам): в ${yr} году — ${fmtMoney(totalThisYear)}, за всё время — ${fmtMoney(totalAllTime)}.\nРеально отмечено как полученное: в ${yr} году — ${fmtMoney(receivedThisYear)}, за всё время — ${fmtMoney(receivedAllTime)}.`;
+    }
+    case 'year_end_forecast': {
+      const monthsLeft = 12-today.month;
+      if(snap.couponRate==null) return 'Пока недостаточно данных о доходности портфеля — добавьте бумаги на вкладке «Инвестиции».';
+      if(monthsLeft<=0) return `Уже декабрь — конец ${today.year} года. Текущий капитал: ${fmtMoney(snap.currentCapital)}.`;
+      const projected = projectCapitalAfter(snap.currentCapital, investAmount, snap.couponRate, snap.taxRate||0, monthsLeft);
+      return `При текущем темпе взносов (${fmtMoney(investAmount)}/мес) и доходности ${fmt(snap.couponRate,1)}% годовых, к концу ${today.year} года капитал может составить примерно ${fmtMoney(projected)} (сейчас ${fmtMoney(snap.currentCapital)}).`;
+    }
+    default: return 'Пока не реализовано.';
+  }
+}
+
+function renderAnalytics(){
+  return `
+    <div class="card">
+      <div class="note" style="margin:0 0 10px;">Нажмите на вопрос — приложение само посчитает ответ на основе ваших данных.</div>
+      ${ANALYTICS_QUESTIONS.map(([key,q])=>`<button class="qbtn ${lastAnalyticsKey===key?'active':''}" data-question="${key}">${q}</button>`).join('')}
+    </div>
+    <div class="card">
+      <div class="card-title">Ответ</div>
+      <div class="answer-box">${lastAnalyticsKey ? analyticsAnswer(lastAnalyticsKey) : 'Выберите вопрос выше, чтобы увидеть ответ.'}</div>
+    </div>
+  `;
+}
+
+/* ---- История ---- */
+function renderHistory(){
+  const months = getMonths();
+  if(!months.length){
+    return `<div class="card"><div class="empty-note">Пока нет сохранённых месяцев. Заполните и сохраните месяц на вкладке «Просчёт».</div></div>`;
+  }
+  const rows = months.map(m=>`<div class="list-row">
+    <div class="name" style="flex:1;">${MONTHS_RU[m.month-1]} ${m.year}</div>
+    <div class="meta" style="text-align:right;">Доход ${fmtMoney(m.totalIncome)} · Расход ${fmtMoney(m.totalExpense)}<br>Остаток ${fmtMoney(m.remainder)} · Пассив ${fmtMoney(m.couponIncome)}</div>
+  </div>`).join('');
+
+  let pfRows='', sumI=0,sumE=0,cnt=0;
+  months.forEach(m=>{
+    const fi = sumItemFacts(m.year,m.month,'income:');
+    const fe = sumItemFacts(m.year,m.month,'expense:');
+    const pi = m.totalIncome ? fi/m.totalIncome*100 : 0;
+    const pe = m.totalExpense ? fe/m.totalExpense*100 : 0;
+    sumI+=pi; sumE+=pe; cnt++;
+    pfRows += `<div class="list-row"><div class="name" style="flex:1;">${MONTHS_RU[m.month-1]} ${m.year}</div>
+      <div class="meta">Доход ${fmt(pi)}% · Расход ${fmt(pe)}%</div></div>`;
+  });
+  const avgLine = cnt ? `Средний % выполнения плана за ${cnt} мес.: доход получен на ${fmt(sumI/cnt)}%, расход исполнен на ${fmt(sumE/cnt)}% от плана.` : '';
+
+  return `
+    <div class="card">
+      <div class="card-title">Сохранённые месяцы <button class="btn small" id="exportDataBtn">Экспорт JSON</button></div>
+      ${rows}
+    </div>
+    <div class="card">
+      <div class="card-title">Динамика: остаток / пассив</div>
+      ${historyChartSVG(months)}
+    </div>
+    <div class="card">
+      <div class="card-title">План / факт по месяцам</div>
+      ${pfRows}
+      <div class="note" style="font-weight:700; color:var(--text);">${avgLine}</div>
+    </div>
+  `;
+}
+
+function historyChartSVG(rows){
+  const w=600,h=180,pad=30;
+  const remainders = rows.map(r=>r.remainder);
+  const passives = rows.map(r=>r.couponIncome||0);
+  const all = [...remainders,...passives,0];
+  let vmin=Math.min(...all), vmax=Math.max(...all);
+  if(vmax===vmin) vmax=vmin+1;
+  const stepX=(w-2*pad)/Math.max(rows.length-1,1);
+  const yOf = v => h-pad-(v-vmin)/(vmax-vmin)*(h-2*pad);
+  const line = vals => vals.map((v,i)=>`${pad+i*stepX},${yOf(v)}`).join(' ');
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" style="width:100%;">
+    <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="var(--border)"/>
+    <polyline points="${line(remainders)}" fill="none" stroke="var(--green)" stroke-width="2"/>
+    <polyline points="${line(passives)}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+    <text x="${pad}" y="14" font-size="9" fill="var(--green)" font-weight="700">— Остаток</text>
+    <text x="${pad+80}" y="14" font-size="9" fill="var(--accent)" font-weight="700">— Пассив</text>
+  </svg>`;
+}
+
+function exportAllData(){
+  const out = {};
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if(k.startsWith(LS)) out[k]=localStorage.getItem(k);
+  }
+  const blob = new Blob([JSON.stringify(out,null,1)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='finance_tracker_export.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ---- Настройки ---- */
+function renderSettingsTab(){
+  const s = getSettings();
+  return `
+    <div class="card">
+      <div class="card-title">Прочие параметры</div>
+      <div class="field"><label>НДФЛ по умолчанию для новых бумаг, %</label><input id="s_tax_rate" type="number" value="${s.taxRate}"></div>
+      <button class="btn primary block" id="saveSettingsBtn">Сохранить</button>
+    </div>
+    <div class="card">
+      <div class="card-title">💾 Данные</div>
+      <div class="note" style="margin:0 0 10px;">Все записи хранятся локально в этом браузере на этом устройстве и сохраняются между сессиями. При смене телефона или очистке данных браузера прогресс будет потерян.</div>
+      <button class="btn block" id="exportDataBtn2">Экспортировать все данные (JSON)</button>
+    </div>
+  `;
+}
+
+/* ============================================================
+   ОБРАБОТЧИКИ
+   ============================================================ */
+function attachHandlers(){
+  // период "Просчёт"
+  const cYear = document.getElementById('c_year');
+  if(cYear){
+    cYear.addEventListener('change', ()=>{ calcYear = parseInt(cYear.value)||calcYear; render(); });
+    document.getElementById('c_month').addEventListener('change', e=>{ calcMonth = parseInt(e.target.value); render(); });
+  }
+  document.querySelectorAll('[data-plan-field]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{ setSettings({[inp.dataset.planField]: fnum(inp.value)}); refreshTotalsOnly(); });
+  });
+  document.querySelectorAll('[data-fact-field]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{ setItemFact(calcYear, calcMonth, inp.dataset.factField, fnum(inp.value)); });
+  });
+  document.querySelectorAll('[data-custom-name]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const [kind,id] = inp.dataset.customName.split(':');
+      updateCustomItem(kind, Number(id)||id, {name:inp.value});
+    });
+  });
+  document.querySelectorAll('[data-custom-amount]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const [kind,id] = inp.dataset.customAmount.split(':');
+      updateCustomItem(kind, parseFloat(id)||id, {amount:fnum(inp.value)});
+      refreshTotalsOnly();
+    });
+  });
+  document.querySelectorAll('[data-del-custom]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const [kind,id] = b.dataset.delCustom.split(':');
+      deleteCustomItem(kind, parseFloat(id)||id);
+      render();
+    });
+  });
+  const addCI = document.getElementById('add_custom_income');
+  if(addCI) addCI.addEventListener('click', ()=>{
+    const name = document.getElementById('ci_name').value.trim() || 'Новая статья дохода';
+    const amount = fnum(document.getElementById('ci_amount').value);
+    addCustomItem('income', name, amount); render();
+  });
+  const addCE = document.getElementById('add_custom_expense');
+  if(addCE) addCE.addEventListener('click', ()=>{
+    const name = document.getElementById('ce_name').value.trim() || 'Новая статья расхода';
+    const amount = fnum(document.getElementById('ce_amount').value);
+    addCustomItem('expense', name, amount); render();
+  });
+  const saveMonthBtn = document.getElementById('saveMonthBtn');
+  if(saveMonthBtn) saveMonthBtn.addEventListener('click', saveMonthNow);
+
+  // Главная
+  const hSavePlan = document.getElementById('h_save_plan');
+  if(hSavePlan) hSavePlan.addEventListener('click', ()=>{
+    const today = todayYM();
+    setSettings({[`plan_${today.year}_${today.month}`]: fnum(document.getElementById('h_plan_amount').value)});
+    render();
+  });
+  const hAddDep = document.getElementById('h_add_deposit');
+  if(hAddDep) hAddDep.addEventListener('click', ()=>{
+    const v = fnum(document.getElementById('h_deposit_amount').value);
+    if(v<=0){ showToast('Введите сумму больше нуля'); return; }
+    const today = todayYM();
+    addDeposit(today.year, today.month, v);
+    render();
+  });
+  document.querySelectorAll('[data-del-deposit]').forEach(b=>{
+    b.addEventListener('click', ()=>{ const today=todayYM(); deleteDeposit(today.year,today.month, parseFloat(b.dataset.delDeposit)); render(); });
+  });
+
+  // Инвестиции
+  const invPercent = document.getElementById('inv_percent');
+  if(invPercent){
+    invPercent.addEventListener('input', ()=>{ setSettings({investPercent: fnum(invPercent.value)}); render(); });
+    document.getElementById('inv_fee').addEventListener('input', e=>{ setSettings({brokerFeePercent: fnum(e.target.value)}); render(); });
+  }
+  const addBondBtn = document.getElementById('addBondBtn');
+  if(addBondBtn) addBondBtn.addEventListener('click', ()=>{
+    addBondIssue({name:'Новый выпуск', nominal:1000, count:0, couponRate:12, taxRate:fnum(getSettings().taxRate,13),
+      paymentDay:1, paymentsPerYear:12, couponMode:'amount', couponAmount:0, assetType:'Облигация'});
+    render();
+  });
+  document.querySelectorAll('[data-bond-field]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const [id,field] = inp.dataset.bondField.split(':');
+      let val = inp.value;
+      if(['nominal','count','couponRate','taxRate','paymentDay','paymentsPerYear','couponAmount'].includes(field)) val = fnum(val);
+      updateBondIssue(parseFloat(id), {[field]:val});
+      render();
+    });
+  });
+  document.querySelectorAll('[data-del-bond]').forEach(b=>{
+    b.addEventListener('click', ()=>{ deleteBondIssue(parseFloat(b.dataset.delBond)); render(); });
+  });
+  document.querySelectorAll('[data-mark-coupon]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const today = todayYM();
+      markCouponReceived(parseFloat(b.dataset.markCoupon), today.year, today.month, fnum(b.dataset.couponAmount));
+      render();
+    });
+  });
+  document.querySelectorAll('[data-unmark-coupon]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const today = todayYM();
+      unmarkCouponReceived(parseFloat(b.dataset.unmarkCoupon), today.year, today.month);
+      render();
+    });
+  });
+
+  // Цели
+  const addGoalBtn = document.getElementById('addGoalBtn');
+  if(addGoalBtn) addGoalBtn.addEventListener('click', ()=>{
+    addSavingsGoal('Новая цель', 100000, 0, '', false); render();
+  });
+  document.querySelectorAll('[data-goal-field]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const [id,field] = inp.dataset.goalField.split(':');
+      let val = inp.value;
+      if(field==='target'||field==='saved') val = fnum(val);
+      updateSavingsGoal(parseFloat(id), {[field]:val});
+    });
+  });
+  document.querySelectorAll('[data-goal-auto]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      updateSavingsGoal(parseFloat(cb.dataset.goalAuto), {autoTrack:cb.checked});
+      render();
+    });
+  });
+  document.querySelectorAll('[data-del-goal]').forEach(b=>{
+    b.addEventListener('click', ()=>{ deleteSavingsGoal(parseFloat(b.dataset.delGoal)); render(); });
+  });
+  const gSavePassive = document.getElementById('g_save_passive');
+  if(gSavePassive) gSavePassive.addEventListener('click', ()=>{
+    setSettings({passiveTarget: fnum(document.getElementById('g_passive_target').value)});
+    render();
+  });
+
+  // Ещё: под-табы
+  document.querySelectorAll('[data-moresub]').forEach(chip=>{
+    chip.addEventListener('click', ()=>{ moreSubTab = chip.dataset.moresub; render(); });
+  });
+
+  // Коммунальные
+  const uYear = document.getElementById('u_year');
+  if(uYear){
+    uYear.addEventListener('change', ()=>{ utilYear = parseInt(uYear.value)||utilYear; render(); });
+    document.getElementById('u_month').addEventListener('change', e=>{ utilMonth = parseInt(e.target.value); render(); });
+  }
+  document.querySelectorAll('[data-util-name]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{ renameUtilityCategory(parseFloat(inp.dataset.utilName), inp.value); });
+  });
+  const addUtilCat = document.getElementById('addUtilCat');
+  if(addUtilCat) addUtilCat.addEventListener('click', ()=>{ addUtilityCategory('Новая статья'); render(); });
+  document.querySelectorAll('[data-del-util]').forEach(b=>{
+    b.addEventListener('click', ()=>{ deleteUtilityCategory(parseFloat(b.dataset.delUtil)); render(); });
+  });
+  const saveUtilBtn = document.getElementById('saveUtilBtn');
+  if(saveUtilBtn) saveUtilBtn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-util-amount]').forEach(inp=>{
+      setUtilityPayment(parseFloat(inp.dataset.utilAmount), utilYear, utilMonth, fnum(inp.value));
+    });
+    showToast('Платежи сохранены');
+    render();
+  });
+
+  // Аналитика
+  document.querySelectorAll('[data-question]').forEach(b=>{
+    b.addEventListener('click', ()=>{ lastAnalyticsKey = b.dataset.question; render(); });
+  });
+
+  // История / экспорт
+  const exportBtn = document.getElementById('exportDataBtn');
+  if(exportBtn) exportBtn.addEventListener('click', exportAllData);
+  const exportBtn2 = document.getElementById('exportDataBtn2');
+  if(exportBtn2) exportBtn2.addEventListener('click', exportAllData);
+
+  // Настройки
+  const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+  if(saveSettingsBtn) saveSettingsBtn.addEventListener('click', ()=>{
+    setSettings({taxRate: fnum(document.getElementById('s_tax_rate').value)});
+    showToast('Настройки сохранены');
+    render();
+  });
+}
+
+function refreshTotalsOnly(){
+  // лёгкий перерасчёт итогов без полной перерисовки (чтобы не терять фокус ввода)
+  const c = calcTotals();
+  // просто ререндерим — потеря фокуса допустима для простоты и надёжности данных
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+(function init(){
+  document.querySelector('#bottomNav button[data-tab="home"]').classList.add('active');
+  render();
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    });
+  }
+})();
+</script>
+</body>
+</html>
