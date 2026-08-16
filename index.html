@@ -249,6 +249,7 @@ function defaultSettings(){
     incomeMain:82000, incomeCourier:40000, incomeOther:0,
     rent:32000, kindergarten:3000, food:25000, unexpected:20000, otherExpense:0,
     investPercent:15, brokerFeePercent:1.5, taxRate:13, passiveTarget:100000, theme:'light',
+    envelopePercent:15,
   };
 }
 function getSettings(){ return Object.assign(defaultSettings(), loadJSON('settings', {})); }
@@ -337,9 +338,9 @@ function totalDepositsAllTime(){
 
 function getSavingsGoals(){ return loadJSON('goals', []); }
 function setSavingsGoals(arr){ saveJSON('goals', arr); }
-function addSavingsGoal(name,target=100000,saved=0,comment='',autoTrack=false){
+function addSavingsGoal(name,target=100000,saved=0,comment='',autoTrack=false,isDebt=false){
   const arr = getSavingsGoals();
-  arr.push({id:Date.now()+Math.random(), name, target, saved, comment, autoTrack});
+  arr.push({id:Date.now()+Math.random(), name, target, saved, comment, autoTrack, isDebt});
   setSavingsGoals(arr);
 }
 function updateSavingsGoal(id,patch){ setSavingsGoals(getSavingsGoals().map(g=>g.id===id?Object.assign(g,patch):g)); }
@@ -509,7 +510,9 @@ function renderHome(){
   const left = Math.max(planAmount-deposited,0);
   const planPct = planAmount>0 ? Math.min(deposited/planAmount*100,100) : 0;
 
-  const goals = getSavingsGoals();
+  const allGoalsHome = getSavingsGoals();
+  const goals = allGoalsHome.filter(g=>!g.isDebt);
+  const debts = allGoalsHome.filter(g=>g.isDebt);
   const goalsHTML = goals.length===0
     ? '<div class="empty-note">Пока нет целей — добавьте на вкладке «Цели».</div>'
     : goals.map(g=>{
@@ -534,6 +537,21 @@ function renderHome(){
         </div>`;
       }).join('');
 
+  const debtsHTML = debts.length===0
+    ? '<div class="empty-note" style="font-weight:700; color:var(--green);">Долгов у вас нет! 🎉</div>'
+    : debts.map(g=>{
+        const paid = g.saved||0;
+        const targetVal = g.target || 1;
+        const left = Math.max(targetVal-paid,0);
+        const pct = Math.min(paid/targetVal*100,100);
+        return `<div class="goal-card">
+          <div class="name">${g.name}</div>
+          <div class="nums">${fmtMoney(paid)} / ${fmtMoney(targetVal)}${g.comment?(' · '+g.comment):''}</div>
+          <div class="ptrack"><div class="pfill" style="width:${pct}%;background:var(--red)"></div></div>
+          <div class="note" style="margin-top:6px;">${left<=0?'Долг погашен!':`Осталось выплатить: ${fmtMoney(left)}`}</div>
+        </div>`;
+      }).join('');
+
   const passiveTarget = fnum(s.passiveTarget, 100000);
   let passiveDetail;
   if(snap.passive>=passiveTarget) passiveDetail = `Цель ${fmtMoney(passiveTarget)}/мес достигнута!`;
@@ -544,6 +562,19 @@ function renderHome(){
   }
 
   const deposits = getDeposits(today.year, today.month);
+
+  const envelopePercent = fnum(s.envelopePercent, 15);
+  const envelopeBase = factIncome>0 ? factIncome : planIncome;
+  const envelopeAmount = envelopeBase * envelopePercent / 100.0;
+  const envelopeHTML = envelopeBase>0 ? `
+    <div class="card" style="background:var(--tile); border-color:var(--orange);">
+      <div class="card-title" style="color:var(--text);">💌 Напоминание</div>
+      <div class="note" style="margin:0; font-weight:700; color:var(--text);">
+        Не забудь внести оплату себе в конверте* — сумма ${fmtMoney(envelopeAmount)}
+      </div>
+      <div class="note" style="margin-top:6px;">* ${fmt(envelopePercent)}% от ${factIncome>0?'фактического':'планируемого'} дохода. Процент можно поменять в «Ещё → Настройки».</div>
+    </div>
+  ` : '';
 
   return `
     <div class="card">
@@ -561,6 +592,8 @@ function renderHome(){
         <div class="tile"><div class="lbl">🎯 Получено купонов</div><div class="val" style="color:var(--accent)">${fmtMoney(totalCouponsReceivedAllTime())}</div></div>
       </div>
     </div>
+
+    ${envelopeHTML}
 
     <div class="card">
       <div class="card-title">План на инвестиции в этом месяце</div>
@@ -588,6 +621,11 @@ function renderHome(){
       <div class="card-title">🪙 Пассивный доход</div>
       <div style="font-size:20px; font-weight:700; color:var(--accent); font-family:'Fraunces',serif;">${fmtMoney(snap.passive)} / мес</div>
       <div class="note">${passiveDetail}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏦 Долги</div>
+      ${debtsHTML}
     </div>
 
     <div class="card">
@@ -954,40 +992,53 @@ function renderGoals(){
     passiveStatus = `Сейчас: ${fmtMoney(snap.passive)}/мес · Цель: ${fmtMoney(passiveTarget)}/мес · Прогноз: ${srok}`;
   }
 
-  const goals = getSavingsGoals();
-  const goalsHTML = goals.length===0 ? '<div class="empty-note">Пока нет целей — добавьте первую кнопкой ниже.</div>' :
-    goals.map(g=>{
-      const targetVal = g.target || 1;
-      const savedVal = g.autoTrack ? snap.currentCapital : g.saved;
-      const pct = Math.min(savedVal/targetVal*100,100);
-      const color = pct>=100?'var(--green)':pct>=50?'var(--accent)':'var(--orange)';
-      let forecast = '';
-      if(g.autoTrack){
-        const left = Math.max(targetVal-snap.currentCapital,0);
-        if(left<=0) forecast = 'Цель достигнута!';
-        else {
-          const r = forecastMonthsToCapital(snap.currentCapital, investAmount, snap.couponRate||0, snap.taxRate||0, targetVal);
-          forecast = r.months ? `Осталось ${fmtMoney(left)} · Прогноз: ~${r.months} мес. (~${fmt(r.months/12,1)} лет)` : `Осталось ${fmtMoney(left)} · увеличьте взнос`;
-        }
+  const allGoals = getSavingsGoals();
+  const goalsOnly = allGoals.filter(g=>!g.isDebt);
+  const debtsOnly = allGoals.filter(g=>g.isDebt);
+
+  function renderGoalCard(g){
+    const targetVal = g.target || 1;
+    const savedVal = g.autoTrack ? snap.currentCapital : g.saved;
+    const pct = Math.min(savedVal/targetVal*100,100);
+    const color = pct>=100?'var(--green)':pct>=50?'var(--accent)':'var(--orange)';
+    let forecast = '';
+    if(g.autoTrack && !g.isDebt){
+      const left = Math.max(targetVal-snap.currentCapital,0);
+      if(left<=0) forecast = 'Цель достигнута!';
+      else {
+        const r = forecastMonthsToCapital(snap.currentCapital, investAmount, snap.couponRate||0, snap.taxRate||0, targetVal);
+        forecast = r.months ? `Осталось ${fmtMoney(left)} · Прогноз: ~${r.months} мес. (~${fmt(r.months/12,1)} лет)` : `Осталось ${fmtMoney(left)} · увеличьте взнос`;
       }
-      return `<div class="card" data-goal-card="${g.id}">
-        <div class="field"><label>Название</label><input data-goal-field="${g.id}:name" value="${g.name}"></div>
-        <div class="row2">
-          <div class="field"><label>Цель, ₽</label><input type="number" data-goal-field="${g.id}:target" value="${g.target}"></div>
-          <div class="field"><label>Накоплено, ₽</label><input type="number" data-goal-field="${g.id}:saved" value="${fmt(savedVal)}" ${g.autoTrack?'disabled':''}></div>
-        </div>
-        <div class="field" style="display:flex; align-items:center; gap:8px;">
-          <input type="checkbox" data-goal-auto="${g.id}" ${g.autoTrack?'checked':''} style="width:auto;">
-          <label style="margin:0;">Считать из портфеля облигаций (авто)</label>
-        </div>
-        <div class="field"><label>Комментарий</label><input data-goal-field="${g.id}:comment" value="${g.comment||''}"></div>
-        <div class="ptrack"><div class="pfill" style="width:${pct}%;background:${color}"></div></div>
-        <div class="note">${fmt(pct)}% ${forecast?(' · '+forecast):''}</div>
-        <div class="btn-row" style="margin-top:10px;">
-          <button class="btn danger small" data-del-goal="${g.id}">🗑 Удалить</button>
-        </div>
-      </div>`;
-    }).join('');
+    } else if(g.isDebt){
+      const left = Math.max(targetVal-savedVal,0);
+      forecast = left<=0 ? 'Долг погашен!' : `Осталось выплатить: ${fmtMoney(left)}`;
+    }
+    const targetLabel = g.isDebt ? 'Сумма долга, ₽' : 'Цель, ₽';
+    const savedLabel = g.isDebt ? 'Уже внёс, ₽' : 'Накоплено, ₽';
+    return `<div class="card" data-goal-card="${g.id}">
+      ${g.isDebt ? '<div class="note" style="font-weight:700; color:var(--red); margin-bottom:4px;">🏦 Долг</div>' : ''}
+      <div class="field"><label>Название</label><input data-goal-field="${g.id}:name" value="${g.name}"></div>
+      <div class="row2">
+        <div class="field"><label>${targetLabel}</label><input type="number" data-goal-field="${g.id}:target" value="${g.target}"></div>
+        <div class="field"><label>${savedLabel}</label><input type="number" data-goal-field="${g.id}:saved" value="${fmt(savedVal)}" ${g.autoTrack?'disabled':''}></div>
+      </div>
+      ${g.isDebt ? '' : `<div class="field" style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" data-goal-auto="${g.id}" ${g.autoTrack?'checked':''} style="width:auto;">
+        <label style="margin:0;">Считать из портфеля облигаций (авто)</label>
+      </div>`}
+      <div class="field"><label>Комментарий</label><input data-goal-field="${g.id}:comment" value="${g.comment||''}"></div>
+      <div class="ptrack"><div class="pfill" style="width:${pct}%;background:${g.isDebt?'var(--red)':color}"></div></div>
+      <div class="note">${fmt(pct)}% ${forecast?(' · '+forecast):''}</div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn danger small" data-del-goal="${g.id}">🗑 Удалить</button>
+      </div>
+    </div>`;
+  }
+
+  const goalsHTML = goalsOnly.length===0 ? '<div class="empty-note">Пока нет целей — добавьте первую кнопкой ниже.</div>' :
+    goalsOnly.map(renderGoalCard).join('');
+  const debtsHTML = debtsOnly.length===0 ? '<div class="empty-note">Пока нет долгов.</div>' :
+    debtsOnly.map(renderGoalCard).join('');
 
   return `
     <div class="card">
@@ -1004,6 +1055,11 @@ function renderGoals(){
       Мои цели накоплений <button class="btn small primary" id="addGoalBtn">+ Добавить цель</button>
     </div>
     ${goalsHTML}
+
+    <div style="font-size:15px; font-weight:700; margin:18px 4px 10px; display:flex; justify-content:space-between; align-items:center;">
+      Мои долги <button class="btn small danger" id="addDebtBtn">+ Добавить долг</button>
+    </div>
+    ${debtsHTML}
   `;
 }
 
@@ -1371,6 +1427,7 @@ function renderSettingsTab(){
     <div class="card">
       <div class="card-title">Прочие параметры</div>
       <div class="field"><label>НДФЛ по умолчанию для новых бумаг, %</label><input id="s_tax_rate" type="number" value="${s.taxRate}"></div>
+      <div class="field"><label>Процент "себе в конверт" от дохода, %</label><input id="s_envelope_percent" type="number" value="${s.envelopePercent}"></div>
       <button class="btn primary block" id="saveSettingsBtn">Сохранить</button>
     </div>
     <div class="card">
@@ -1502,7 +1559,11 @@ function attachHandlers(){
   // Цели
   const addGoalBtn = document.getElementById('addGoalBtn');
   if(addGoalBtn) addGoalBtn.addEventListener('click', ()=>{
-    addSavingsGoal('Новая цель', 100000, 0, '', false); render();
+    addSavingsGoal('Новая цель', 100000, 0, '', false, false); render();
+  });
+  const addDebtBtn = document.getElementById('addDebtBtn');
+  if(addDebtBtn) addDebtBtn.addEventListener('click', ()=>{
+    addSavingsGoal('Новый долг', 100000, 0, '', false, true); render();
   });
   document.querySelectorAll('[data-goal-field]').forEach(inp=>{
     inp.addEventListener('input', ()=>{
@@ -1569,7 +1630,10 @@ function attachHandlers(){
   // Настройки
   const saveSettingsBtn = document.getElementById('saveSettingsBtn');
   if(saveSettingsBtn) saveSettingsBtn.addEventListener('click', ()=>{
-    setSettings({taxRate: fnum(document.getElementById('s_tax_rate').value)});
+    setSettings({
+      taxRate: fnum(document.getElementById('s_tax_rate').value),
+      envelopePercent: fnum(document.getElementById('s_envelope_percent').value, 15),
+    });
     showToast('Настройки сохранены');
     render();
   });
